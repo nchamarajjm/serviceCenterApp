@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "508672274345",
+    "project_id": "servicestationapp-843c1",
+    "storage_bucket": "servicestationapp-843c1.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:508672274345:android:b83381022b74177eeddeb8",
+        "android_client_info": {
+          "package_name": "com.example.servicecenterapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAW2E2POeozKEkie4W0EX5VWGRC-UNsCgM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

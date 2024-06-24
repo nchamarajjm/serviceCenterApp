@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">ServiceCenterApp</string>
+    <string name="minimum_password">Password too short, enter minimum 6 characters!</string>
+    <string name="auth_failed">Authentication Failed</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="login">Login</string>
+    <string name="logout">Logout</string>
+    <string name="not_registered_sign_up">Not Registered? Sign Up</string>
+    <string name="already_registered_login">Already Registered? Login</string>
+</resources>
