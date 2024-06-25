@@ -57,103 +57,92 @@ public class RegisterActivity extends AppCompatActivity {
         btnVerifyOtp = findViewById(R.id.verify_otp_button);
         progressBar = findViewById(R.id.progressBar);
 
-        btnSignUp.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String firstName = inputFirstName.getText().toString().trim();
-                String lastName = inputLastName.getText().toString().trim();
-                String phoneNumber = inputPhoneNumber.getText().toString().trim();
-                String email = inputEmail.getText().toString().trim();
-                String password = inputPassword.getText().toString().trim();
+        btnSignUp.setOnClickListener(v -> {
+            String firstName = inputFirstName.getText().toString().trim();
+            String lastName = inputLastName.getText().toString().trim();
+            String phoneNumber = inputPhoneNumber.getText().toString().trim();
+            String email = inputEmail.getText().toString().trim();
+            String password = inputPassword.getText().toString().trim();
 
-                if (TextUtils.isEmpty(firstName)) {
-                    Toast.makeText(getApplicationContext(), "Enter first name!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+            if (TextUtils.isEmpty(firstName)) {
+                Toast.makeText(getApplicationContext(), "Enter first name!", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-                if (TextUtils.isEmpty(lastName)) {
-                    Toast.makeText(getApplicationContext(), "Enter last name!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+            if (TextUtils.isEmpty(lastName)) {
+                Toast.makeText(getApplicationContext(), "Enter last name!", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-                if (TextUtils.isEmpty(phoneNumber)) {
-                    Toast.makeText(getApplicationContext(), "Enter phone number!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+            if (TextUtils.isEmpty(phoneNumber)) {
+                Toast.makeText(getApplicationContext(), "Enter phone number!", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-                if (TextUtils.isEmpty(email)) {
-                    Toast.makeText(getApplicationContext(), "Enter email address!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+            if (TextUtils.isEmpty(email)) {
+                Toast.makeText(getApplicationContext(), "Enter email address!", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-                if (TextUtils.isEmpty(password)) {
-                    Toast.makeText(getApplicationContext(), "Enter password!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+            if (TextUtils.isEmpty(password)) {
+                Toast.makeText(getApplicationContext(), "Enter password!", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-                if (password.length() < 6) {
-                    Toast.makeText(getApplicationContext(), "Password too short, enter minimum 6 characters!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+            if (password.length() < 6) {
+                Toast.makeText(getApplicationContext(), "Password too short, enter minimum 6 characters!", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-                progressBar.setVisibility(View.VISIBLE);
+            progressBar.setVisibility(View.VISIBLE);
 
-                // Create user
-                auth.createUserWithEmailAndPassword(email, password)
-                        .addOnCompleteListener(RegisterActivity.this, task -> {
-                            progressBar.setVisibility(View.GONE);
-                            if (!task.isSuccessful()) {
-                                String errorMessage = task.getException() != null ? task.getException().getMessage() : "Unknown error";
-                                Toast.makeText(RegisterActivity.this, "Authentication Failed: " + errorMessage, Toast.LENGTH_SHORT).show();
-                                Log.e(TAG, "Authentication Failed", task.getException());
-                            } else {
-                                FirebaseUser user = auth.getCurrentUser();
-                                if (user != null) {
-                                    String uid = user.getUid();
-                                    Map<String, Object> userDetails = new HashMap<>();
-                                    userDetails.put("firstName", firstName);
-                                    userDetails.put("lastName", lastName);
-                                    userDetails.put("phoneNumber", phoneNumber);
-                                    userDetails.put("email", email);
-                                    userDetails.put("isVerified", false);
+            // Create user
+            auth.createUserWithEmailAndPassword(email, password)
+                    .addOnCompleteListener(RegisterActivity.this, task -> {
+                        progressBar.setVisibility(View.GONE);
+                        if (!task.isSuccessful()) {
+                            String errorMessage = task.getException() != null ? task.getException().getMessage() : "Unknown error";
+                            Toast.makeText(RegisterActivity.this, "Authentication Failed: " + errorMessage, Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "Authentication Failed", task.getException());
+                        } else {
+                            FirebaseUser user = auth.getCurrentUser();
+                            if (user != null) {
+                                String uid = user.getUid();
+                                Map<String, Object> userDetails = new HashMap<>();
+                                userDetails.put("firstName", firstName);
+                                userDetails.put("lastName", lastName);
+                                userDetails.put("phoneNumber", phoneNumber);
+                                userDetails.put("email", email);
+                                userDetails.put("isVerified", false);
 
-                                    db.collection("users").document(uid)
-                                            .set(userDetails)
-                                            .addOnCompleteListener(task1 -> {
-                                                if (task1.isSuccessful()) {
-                                                    sendVerificationEmail();
-                                                    sendVerificationSms(phoneNumber);
-                                                    inputOtp.setVisibility(View.VISIBLE);
-                                                    btnVerifyOtp.setVisibility(View.VISIBLE);
-                                                } else {
-                                                    Toast.makeText(RegisterActivity.this, "Failed to save user details: " + task1.getException(), Toast.LENGTH_SHORT).show();
-                                                    Log.e(TAG, "Failed to save user details", task1.getException());
-                                                }
-                                            });
-                                }
+                                db.collection("users").document(uid)
+                                        .set(userDetails)
+                                        .addOnCompleteListener(task1 -> {
+                                            if (task1.isSuccessful()) {
+                                                sendVerificationEmail();
+                                                sendVerificationSms(phoneNumber);
+                                                inputOtp.setVisibility(View.VISIBLE);
+                                                btnVerifyOtp.setVisibility(View.VISIBLE);
+                                            } else {
+                                                Toast.makeText(RegisterActivity.this, "Failed to save user details: " + task1.getException(), Toast.LENGTH_SHORT).show();
+                                                Log.e(TAG, "Failed to save user details", task1.getException());
+                                            }
+                                        });
                             }
-                        });
-            }
+                        }
+                    });
         });
 
-        btnVerifyOtp.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String code = inputOtp.getText().toString().trim();
-                if (TextUtils.isEmpty(code)) {
-                    Toast.makeText(RegisterActivity.this, "Enter OTP!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                verifyOtp(code);
+        btnVerifyOtp.setOnClickListener(v -> {
+            String code = inputOtp.getText().toString().trim();
+            if (TextUtils.isEmpty(code)) {
+                Toast.makeText(RegisterActivity.this, "Enter OTP!", Toast.LENGTH_SHORT).show();
+                return;
             }
+            verifyOtp(code);
         });
 
-        btnLogin.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
-            }
-        });
+        btnLogin.setOnClickListener(v -> startActivity(new Intent(RegisterActivity.this, LoginActivity.class)));
     }
 
     private void sendVerificationEmail() {
@@ -173,12 +162,11 @@ public class RegisterActivity extends AppCompatActivity {
     private void sendVerificationSms(String phoneNumber) {
         PhoneAuthOptions options = PhoneAuthOptions.newBuilder(auth)
                 .setPhoneNumber(phoneNumber)
-                .setTimeout(120L, TimeUnit.SECONDS) // Set timeout to 120 seconds
+                .setTimeout(60L, TimeUnit.SECONDS) // Adjust the timeout as needed
                 .setActivity(this)
                 .setCallbacks(new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
                     @Override
                     public void onVerificationCompleted(@NonNull PhoneAuthCredential phoneAuthCredential) {
-                        // Auto verification or Instant verification
                         String code = phoneAuthCredential.getSmsCode();
                         if (code != null) {
                             inputOtp.setText(code);
@@ -204,7 +192,6 @@ public class RegisterActivity extends AppCompatActivity {
         PhoneAuthProvider.verifyPhoneNumber(options);
     }
 
-
     private void verifyOtp(String code) {
         if (verificationId != null) {
             PhoneAuthCredential credential = PhoneAuthProvider.getCredential(verificationId, code);
@@ -216,7 +203,6 @@ public class RegisterActivity extends AppCompatActivity {
         auth.signInWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        // Update user verification status in Firestore
                         FirebaseUser user = auth.getCurrentUser();
                         if (user != null) {
                             db.collection("users").document(user.getUid())
@@ -239,4 +225,3 @@ public class RegisterActivity extends AppCompatActivity {
                 });
     }
 }
-
