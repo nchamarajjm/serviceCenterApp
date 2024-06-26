@@ -1,20 +1,12 @@
 package com.example.servicecenterapp;
 
 public class MainData {
-    private String date;
-    private String vehicleNo;
+    private String vehicleNo,vehicleBrand;
 
-    public MainData(String date, String vehicleNo) {
-        this.date = date;
+
+    public MainData(String vehicleNo, String vehicleBrand) {
         this.vehicleNo = vehicleNo;
-    }
-
-    public String getDate() {
-        return date;
-    }
-
-    public void setDate(String date) {
-        this.date = date;
+        this.vehicleBrand = vehicleBrand;
     }
 
     public String getVehicleNo() {
@@ -23,5 +15,13 @@ public class MainData {
 
     public void setVehicleNo(String vehicleNo) {
         this.vehicleNo = vehicleNo;
+    }
+
+    public String getvehicleBrand() {
+        return vehicleBrand;
+    }
+
+    public void setvehicleBrand(String vehicleBrand) {
+        this.vehicleBrand = vehicleBrand;
     }
 }

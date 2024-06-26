@@ -27,7 +27,7 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.MainViewHolder
     @Override
     public void onBindViewHolder(@NonNull MainViewHolder holder, int position) {
         MainData data = mainDataList.get(position);
-        holder.txtDate.setText(data.getDate());
+        holder.txtVehicleBrand.setText(data.getvehicleBrand());
         holder.txtVehicleNo.setText(data.getVehicleNo());
     }
 
@@ -37,12 +37,12 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.MainViewHolder
     }
 
     static class MainViewHolder extends RecyclerView.ViewHolder {
-        TextView txtDate, txtVehicleNo;
+        TextView txtVehicleNo, txtVehicleBrand;
 
         public MainViewHolder(@NonNull View itemView) {
             super(itemView);
-            txtDate = itemView.findViewById(R.id.txt_date);
             txtVehicleNo = itemView.findViewById(R.id.txt_vehicle_no);
+            txtVehicleBrand = itemView.findViewById(R.id.txt_vehicle_brand);
         }
     }
 }

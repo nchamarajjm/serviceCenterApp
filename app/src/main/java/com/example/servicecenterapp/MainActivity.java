@@ -107,15 +107,15 @@ public class MainActivity extends AppCompatActivity {
             ConnectionHelper connectionHelper = new ConnectionHelper();
             connect = connectionHelper.connectionClass();
             if (connect != null) {
-                String query = "SELECT distinct (vehino) FROM tblmain WHERE cusid = '" + customerId + "'";
+                String query = "SELECT distinct (vehino),vehibrand FROM tblmain WHERE cusid = '" + customerId + "'";
                 Statement st = connect.createStatement();
                 ResultSet rs = st.executeQuery(query);
 
                 mainDataList.clear();
                 while (rs.next()) {
-                    //String date = rs.getString("date");
+                    String vehicleBrand = rs.getString("vehibrand");
                     String vehicleNo = rs.getString("vehino");
-                    mainDataList.add(new MainData("", vehicleNo));
+                    mainDataList.add(new MainData(vehicleNo,vehicleBrand ));
                 }
                 mainAdapter.notifyDataSetChanged();
                 connect.close();
