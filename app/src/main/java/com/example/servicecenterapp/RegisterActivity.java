@@ -113,7 +113,7 @@ public class RegisterActivity extends AppCompatActivity {
                                 userDetails.put("lastName", lastName);
                                 userDetails.put("phoneNumber", phoneNumber);
                                 userDetails.put("email", email);
-                                userDetails.put("isVerified", false);
+                                userDetails.put("customer_id", "");
 
                                 db.collection("users").document(uid)
                                         .set(userDetails)
@@ -203,21 +203,9 @@ public class RegisterActivity extends AppCompatActivity {
         auth.signInWithCredential(credential)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        FirebaseUser user = auth.getCurrentUser();
-                        if (user != null) {
-                            db.collection("users").document(user.getUid())
-                                    .update("isVerified", true)
-                                    .addOnCompleteListener(task1 -> {
-                                        if (task1.isSuccessful()) {
-                                            Toast.makeText(RegisterActivity.this, "Verification successful", Toast.LENGTH_SHORT).show();
-                                            startActivity(new Intent(RegisterActivity.this, MainActivity.class));
-                                            finish();
-                                        } else {
-                                            Toast.makeText(RegisterActivity.this, "Failed to update verification status: " + task1.getException(), Toast.LENGTH_SHORT).show();
-                                            Log.e(TAG, "Failed to update verification status", task1.getException());
-                                        }
-                                    });
-                        }
+                        Toast.makeText(RegisterActivity.this, "Phone number verified successfully", Toast.LENGTH_SHORT).show();
+                        startActivity(new Intent(RegisterActivity.this, MainActivity.class));
+                        finish();
                     } else {
                         Toast.makeText(RegisterActivity.this, "OTP verification failed: " + task.getException(), Toast.LENGTH_SHORT).show();
                         Log.e(TAG, "OTP Verification Failed", task.getException());

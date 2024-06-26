@@ -14,7 +14,7 @@ public class ConnectionHelper {
     @SuppressLint("NewApi")
     public  Connection connectionClass(){
         ip ="139.99.90.229";
-        database="TestAppDB";
+        database="SAVONTADB";
         username="sa";
         password="sa@SQL24";
         port="1433";

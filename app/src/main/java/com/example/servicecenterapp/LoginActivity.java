@@ -12,18 +12,27 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.FirebaseException;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.auth.PhoneAuthCredential;
+import com.google.firebase.auth.PhoneAuthOptions;
+import com.google.firebase.auth.PhoneAuthProvider;
+
+import java.util.concurrent.TimeUnit;
 
 public class LoginActivity extends AppCompatActivity {
 
-    private EditText inputEmail, inputPassword;
-    private Button btnLogin, btnRegister;
+    private EditText inputEmail, inputPassword, inputPhoneNumber, inputOtp;
+    private Button btnLogin, btnRegister, btnSendOtp, btnVerifyOtp;
     private ProgressBar progressBar;
     private FirebaseAuth auth;
     private FirebaseFirestore db;
     private static final String TAG = "LoginActivity";
+
+    private String verificationId;
+    private PhoneAuthProvider.ForceResendingToken resendToken;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,8 +45,12 @@ public class LoginActivity extends AppCompatActivity {
 
         inputEmail = findViewById(R.id.email);
         inputPassword = findViewById(R.id.password);
+        inputPhoneNumber = findViewById(R.id.phone_number);
+        inputOtp = findViewById(R.id.otp_code);
         btnLogin = findViewById(R.id.login_button);
         btnRegister = findViewById(R.id.sign_up_button);
+        btnSendOtp = findViewById(R.id.send_otp_button);
+        btnVerifyOtp = findViewById(R.id.verify_otp_button);
         progressBar = findViewById(R.id.progressBar);
 
         btnLogin.setOnClickListener(v -> {
@@ -56,7 +69,7 @@ public class LoginActivity extends AppCompatActivity {
 
             progressBar.setVisibility(View.VISIBLE);
 
-            // Authenticate user
+            // Authenticate user with email and password
             auth.signInWithEmailAndPassword(email, password)
                     .addOnCompleteListener(LoginActivity.this, task -> {
                         progressBar.setVisibility(View.GONE);
@@ -66,21 +79,8 @@ public class LoginActivity extends AppCompatActivity {
                             FirebaseUser user = auth.getCurrentUser();
                             if (user != null) {
                                 if (user.isEmailVerified()) {
-                                    db.collection("users").document(user.getUid()).get()
-                                            .addOnCompleteListener(task1 -> {
-                                                if (task1.isSuccessful() && task1.getResult() != null) {
-                                                    Boolean isVerified = task1.getResult().getBoolean("isVerified");
-                                                    if (isVerified != null && isVerified) {
-                                                        startActivity(new Intent(LoginActivity.this, MainActivity.class));
-                                                        finish();
-                                                    } else {
-                                                        Toast.makeText(LoginActivity.this, "Please verify your email before logging in.", Toast.LENGTH_SHORT).show();
-                                                        auth.signOut();
-                                                    }
-                                                } else {
-                                                    Toast.makeText(LoginActivity.this, "Failed to check verification status: " + task1.getException(), Toast.LENGTH_SHORT).show();
-                                                }
-                                            });
+                                    startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                                    finish();
                                 } else {
                                     Toast.makeText(LoginActivity.this, "Please verify your email before logging in.", Toast.LENGTH_SHORT).show();
                                     auth.signOut();
@@ -90,6 +90,78 @@ public class LoginActivity extends AppCompatActivity {
                     });
         });
 
+        btnSendOtp.setOnClickListener(v -> {
+            String phoneNumber = inputPhoneNumber.getText().toString().trim();
+            if (TextUtils.isEmpty(phoneNumber)) {
+                Toast.makeText(getApplicationContext(), "Enter phone number!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            sendVerificationSms(phoneNumber);
+        });
+
+        btnVerifyOtp.setOnClickListener(v -> {
+            String code = inputOtp.getText().toString().trim();
+            if (TextUtils.isEmpty(code)) {
+                Toast.makeText(getApplicationContext(), "Enter OTP!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            verifyOtp(code);
+        });
+
         btnRegister.setOnClickListener(v -> startActivity(new Intent(LoginActivity.this, RegisterActivity.class)));
+    }
+
+    private void sendVerificationSms(String phoneNumber) {
+        PhoneAuthOptions options = PhoneAuthOptions.newBuilder(auth)
+                .setPhoneNumber(phoneNumber)
+                .setTimeout(60L, TimeUnit.SECONDS) // Adjust the timeout as needed
+                .setActivity(this)
+                .setCallbacks(new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+                    @Override
+                    public void onVerificationCompleted(@NonNull PhoneAuthCredential phoneAuthCredential) {
+                        String code = phoneAuthCredential.getSmsCode();
+                        if (code != null) {
+                            inputOtp.setText(code);
+                            verifyOtp(code);
+                        }
+                    }
+
+                    @Override
+                    public void onVerificationFailed(@NonNull FirebaseException e) {
+                        Toast.makeText(LoginActivity.this, "Failed to send SMS verification: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "SMS Verification Failed", e);
+                    }
+
+                    @Override
+                    public void onCodeSent(@NonNull String verificationId,
+                                           @NonNull PhoneAuthProvider.ForceResendingToken token) {
+                        LoginActivity.this.verificationId = verificationId;
+                        LoginActivity.this.resendToken = token;
+                        Toast.makeText(LoginActivity.this, "OTP sent to phone number.", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .build();
+        PhoneAuthProvider.verifyPhoneNumber(options);
+    }
+
+    private void verifyOtp(String code) {
+        if (verificationId != null) {
+            PhoneAuthCredential credential = PhoneAuthProvider.getCredential(verificationId, code);
+            signInWithPhoneAuthCredential(credential);
+        }
+    }
+
+    private void signInWithPhoneAuthCredential(PhoneAuthCredential credential) {
+        auth.signInWithCredential(credential)
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        Toast.makeText(LoginActivity.this, "Phone number verified successfully", Toast.LENGTH_SHORT).show();
+                        startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                        finish();
+                    } else {
+                        Toast.makeText(LoginActivity.this, "OTP verification failed: " + task.getException(), Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "OTP Verification Failed", task.getException());
+                    }
+                });
     }
 }
