@@ -1,12 +1,13 @@
 package com.example.servicecenterapp;
 
 public class MainData {
-    private String vehicleNo,vehicleBrand;
+    private String vehicleNo,vehicleBrand,odoMeter;
 
 
-    public MainData(String vehicleNo, String vehicleBrand) {
+    public MainData(String vehicleNo, String vehicleBrand, String odoMeter) {
         this.vehicleNo = vehicleNo;
         this.vehicleBrand = vehicleBrand;
+        this.odoMeter =odoMeter;
     }
 
     public String getVehicleNo() {
@@ -23,5 +24,13 @@ public class MainData {
 
     public void setvehicleBrand(String vehicleBrand) {
         this.vehicleBrand = vehicleBrand;
+    }
+
+    public String getodoMeter() {
+        return odoMeter;
+    }
+
+    public void setodoMeter(String odoMeter) {
+        this.odoMeter = odoMeter;
     }
 }
