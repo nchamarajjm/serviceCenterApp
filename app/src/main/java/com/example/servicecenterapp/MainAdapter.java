@@ -1,9 +1,12 @@
 package com.example.servicecenterapp;
 
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -71,9 +74,44 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.MainViewHolder
         container.removeAllViews();
         if (serviceRecords != null) {
             for (ServiceRecord record : serviceRecords) {
+                LinearLayout horizontalLayout = new LinearLayout(container.getContext());
+                horizontalLayout.setOrientation(LinearLayout.HORIZONTAL);
+
+                //TextView for the service record
                 TextView textView = new TextView(container.getContext());
-                textView.setText("Inno: " + record.getInno());
-                container.addView(textView);
+                textView.setText(record.getInno());
+                textView.setTextSize(16);
+                textView.setTypeface(null, Typeface.BOLD);
+
+                // Set the margins (top and bottom)
+                LinearLayout.LayoutParams textViewLayoutParams = new LinearLayout.LayoutParams(
+                        0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1.0f
+                );
+                textViewLayoutParams.setMargins(0, 50, 0, 35);
+                textView.setLayoutParams(textViewLayoutParams);
+                horizontalLayout.addView(textView);
+
+                // ImageButton for invoice icon
+                ImageButton btnViewInvoice = new ImageButton(container.getContext());
+                btnViewInvoice.setImageResource(R.drawable.invoice_icon);
+                LinearLayout.LayoutParams buttonLayoutParams = new LinearLayout.LayoutParams(125, 125);
+                btnViewInvoice.setLayoutParams(buttonLayoutParams);
+                btnViewInvoice.setBackgroundColor(Color.TRANSPARENT);
+
+                //ImageButton for report icon
+                ImageButton btnViewReport = new ImageButton(container.getContext());
+                btnViewReport.setImageResource(R.drawable.report_icon);
+                btnViewReport.setLayoutParams(buttonLayoutParams);
+                btnViewReport.setBackgroundColor(Color.TRANSPARENT);
+
+                // Add buttons to the horizontal layout
+                horizontalLayout.addView(btnViewInvoice);
+                horizontalLayout.addView(btnViewReport);
+
+                // Add the horizontal layout to the serviceRecordsContainer
+                container.addView(horizontalLayout);
             }
         }
     }
