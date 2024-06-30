@@ -1,17 +1,16 @@
 package com.example.servicecenterapp;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -36,11 +35,13 @@ public class MainActivity extends AppCompatActivity implements MainAdapter.OnSer
     private Connection connect;
     private FirebaseFirestore db;
     private ImageView img_btn_logout;
+    private ProgressBar progressBar;
     private static final String TAG = "MainActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         setContentView(R.layout.activity_main);
 
         // Initialize Firebase Auth and Firestore
@@ -53,6 +54,7 @@ public class MainActivity extends AppCompatActivity implements MainAdapter.OnSer
         txtEmail = findViewById(R.id.txt_email);
         txtCustomerId = findViewById(R.id.txt_customer_id);
         recyclerView = findViewById(R.id.recycler_view);
+        progressBar = findViewById(R.id.progress_bar);  // Initialize the ProgressBar
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         mainDataList = new ArrayList<>();
         mainAdapter = new MainAdapter(mainDataList, this);
@@ -61,6 +63,7 @@ public class MainActivity extends AppCompatActivity implements MainAdapter.OnSer
 
         FirebaseUser user = auth.getCurrentUser();
         if (user != null) {
+            progressBar.setVisibility(View.VISIBLE);  // Show progress bar
             loadUserInfo(user.getUid());
         } else {
             Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
@@ -97,10 +100,12 @@ public class MainActivity extends AppCompatActivity implements MainAdapter.OnSer
                             fetchDataFromSql(customerId);
                         } else {
                             Log.d(TAG, "No such document");
+                            progressBar.setVisibility(View.GONE);  // Hide progress bar on failure
                         }
                     } else {
                         Log.d(TAG, "get failed with ", task.getException());
                         Toast.makeText(MainActivity.this, "Failed to load user details.", Toast.LENGTH_SHORT).show();
+                        progressBar.setVisibility(View.GONE);  // Hide progress bar on failure
                     }
                 });
     }
@@ -110,7 +115,11 @@ public class MainActivity extends AppCompatActivity implements MainAdapter.OnSer
             ConnectionHelper connectionHelper = new ConnectionHelper();
             connect = connectionHelper.connectionClass();
             if (connect != null) {
-                String query = "SELECT tm.vehino,tm.vehibrand,tm.odimeter,tm.date FROM tblmain tm INNER JOIN (SELECT vehino, MAX(CONVERT(datetime, date, 105)) AS max_date FROM tblmain WHERE cusid = '" + customerId + "' GROUP BY vehino) subq ON tm.vehino = subq.vehino AND CONVERT(datetime, tm.date, 105) = subq.max_date WHERE tm.cusid = '" + customerId + "' ORDER BY tm.vehino;";
+                String query = "SELECT tm.vehino, tm.vehibrand, tm.odimeter, tm.date FROM tblmain tm " +
+                        "INNER JOIN (SELECT vehino, MAX(CONVERT(datetime, date, 105)) AS max_date FROM tblmain " +
+                        "WHERE cusid = '" + customerId + "' GROUP BY vehino) subq " +
+                        "ON tm.vehino = subq.vehino AND CONVERT(datetime, tm.date, 105) = subq.max_date " +
+                        "WHERE tm.cusid = '" + customerId + "' ORDER BY tm.vehino;";
                 Statement st = connect.createStatement();
                 ResultSet rs = st.executeQuery(query);
 
@@ -119,42 +128,41 @@ public class MainActivity extends AppCompatActivity implements MainAdapter.OnSer
                     String vehicleBrand = rs.getString("vehibrand");
                     String vehicleNo = rs.getString("vehino");
                     String odoMeter = rs.getString("odimeter");
-                    mainDataList.add(new MainData(vehicleNo, vehicleBrand, odoMeter));
+                    MainData mainData = new MainData(vehicleNo, vehicleBrand, odoMeter);
+
+                    // Fetch service records for the current vehicle
+                    List<ServiceRecord> serviceRecords = fetchServiceRecords(vehicleNo);
+                    mainData.setServiceRecords(serviceRecords);
+
+                    mainDataList.add(mainData);
                 }
                 mainAdapter.notifyDataSetChanged();
+                progressBar.setVisibility(View.GONE);  // Hide progress bar when data is loaded
                 connect.close();
             } else {
                 Toast.makeText(this, "Connection Error", Toast.LENGTH_SHORT).show();
+                progressBar.setVisibility(View.GONE);  // Hide progress bar on failure
             }
         } catch (Exception ex) {
             Log.e("Error", ex.getMessage());
+            progressBar.setVisibility(View.GONE);  // Hide progress bar on failure
         }
     }
 
-    @Override
-    public void onServiceRecordsClick(String vehicleNo) {
-        fetchServiceRecords(vehicleNo);
-    }
-
-    private void fetchServiceRecords(String vehicleNo) {
+    private List<ServiceRecord> fetchServiceRecords(String vehicleNo) {
+        List<ServiceRecord> serviceRecords = new ArrayList<>();
         try {
             ConnectionHelper connectionHelper = new ConnectionHelper();
             connect = connectionHelper.connectionClass();
             if (connect != null) {
                 String query = "SELECT top 5 inno FROM tblitemlist WHERE vehino = '" + vehicleNo + "' group by inno ORDER BY inno Desc";
-
                 Statement st = connect.createStatement();
                 ResultSet rs = st.executeQuery(query);
 
-                List<ServiceRecord> serviceRecords = new ArrayList<>();
                 while (rs.next()) {
                     String inno = rs.getString("inno");
                     serviceRecords.add(new ServiceRecord(inno));
                 }
-
-                // Display service records (this can be done through a dialog or a new activity)
-                showServiceRecordsDialog(serviceRecords);
-
                 connect.close();
             } else {
                 Toast.makeText(this, "Connection Error", Toast.LENGTH_SHORT).show();
@@ -162,25 +170,11 @@ public class MainActivity extends AppCompatActivity implements MainAdapter.OnSer
         } catch (Exception ex) {
             Log.e("Error", ex.getMessage());
         }
+        return serviceRecords;
     }
 
-
-    private void showServiceRecordsDialog(List<ServiceRecord> serviceRecords) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        View dialogView = inflater.inflate(R.layout.dialog_service_records, null);
-        builder.setView(dialogView);
-
-        TextView txtServiceRecords = dialogView.findViewById(R.id.txt_service_records);
-        StringBuilder recordsBuilder = new StringBuilder();
-        for (ServiceRecord record : serviceRecords) {
-            recordsBuilder.append("Inno: ").append(record.getInno()).append("\n");
-        }
-        txtServiceRecords.setText(recordsBuilder.toString());
-
-        builder.setPositiveButton("Close", (dialog, which) -> dialog.dismiss());
-        AlertDialog dialog = builder.create();
-        dialog.show();
+    @Override
+    public void onServiceRecordsClick(String vehicleNo, int position) {
+        // This method can be left empty if service records are loaded on activity load
     }
-
 }

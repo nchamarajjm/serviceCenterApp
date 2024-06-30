@@ -32,6 +32,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="80dp"
         android:text="Login with Email"
+        android:backgroundTint="@color/primary_green"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/password" />
 
@@ -41,6 +42,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="15dp"
         android:text="Register"
+        android:backgroundTint="@color/primary_green"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView3" />
 

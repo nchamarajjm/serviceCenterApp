@@ -1,8 +1,9 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Base.Theme.ServiceCenterApp" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Base.Theme.ServiceCenterApp_Light" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">@color/primary_green</item>
     </style>
 
     <style name="Theme.ServiceCenterApp" parent="Base.Theme.ServiceCenterApp" />
