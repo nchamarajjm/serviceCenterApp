@@ -19,6 +19,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.text.DecimalFormat;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -28,7 +29,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 public class MainActivity extends AppCompatActivity implements MainAdapter.OnServiceRecordsClickListener {
 
     private FirebaseAuth auth;
-    private TextView txtFirstname, txtLastname, txtPhoneNumber, txtEmail, txtCustomerId;
+    private TextView txtFirstname, txtLastname, txtPhoneNumber, txtEmail, txtCustomerId,txtCreditBal;
     private RecyclerView recyclerView;
     private MainAdapter mainAdapter;
     private List<MainData> mainDataList;
@@ -60,6 +61,7 @@ public class MainActivity extends AppCompatActivity implements MainAdapter.OnSer
         mainAdapter = new MainAdapter(mainDataList, this);
         recyclerView.setAdapter(mainAdapter);
         img_btn_logout = findViewById(R.id.img_logout_button);
+        txtCreditBal = findViewById(R.id.txtCreditBal);
 
         FirebaseUser user = auth.getCurrentUser();
         if (user != null) {
@@ -98,6 +100,8 @@ public class MainActivity extends AppCompatActivity implements MainAdapter.OnSer
 
                             // Fetch data from tblmain
                             fetchDataFromSql(customerId);
+                            // Fetch balance from tblclist
+                            fetchBalance(customerId);
                         } else {
                             Log.d(TAG, "No such document");
                             progressBar.setVisibility(View.GONE);  // Hide progress bar on failure
@@ -176,5 +180,34 @@ public class MainActivity extends AppCompatActivity implements MainAdapter.OnSer
     @Override
     public void onServiceRecordsClick(String vehicleNo, int position) {
         // This method can be left empty if service records are loaded on activity load
+    }
+
+    private void fetchBalance(String customerId) {
+        try {
+            ConnectionHelper connectionHelper = new ConnectionHelper();
+            connect = connectionHelper.connectionClass();
+            if (connect != null) {
+                String query = "SELECT balance FROM tblclist WHERE ownerid = '" + customerId + "'";
+                Statement st = connect.createStatement();
+                ResultSet rs = st.executeQuery(query);
+
+                if (rs.next()) {
+                    double balance = rs.getDouble("balance");
+                    DecimalFormat df = new DecimalFormat("#.00");  // formatter with two decimal places
+                    String formattedBalance = df.format(balance);
+                    txtCreditBal.setText("Credit Balance Rs: "+formattedBalance);
+                    txtCreditBal.setVisibility(View.VISIBLE);
+                } else {
+                    txtCreditBal.setVisibility(View.GONE); // Hide if no records
+                }
+                connect.close();
+            } else {
+                Toast.makeText(this, "Connection Error", Toast.LENGTH_SHORT).show();
+                txtCreditBal.setVisibility(View.GONE);
+            }
+        } catch (Exception ex) {
+            Log.e("Error", ex.getMessage());
+            txtCreditBal.setVisibility(View.GONE);
+        }
     }
 }

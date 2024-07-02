@@ -1,7 +1,10 @@
 package com.example.servicecenterapp;
 
+import android.app.AlertDialog;
+import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,7 +14,12 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.RecyclerView;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.List;
 
 
@@ -100,11 +108,13 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.MainViewHolder
                 btnViewInvoice.setLayoutParams(buttonLayoutParams);
                 btnViewInvoice.setBackgroundColor(Color.TRANSPARENT);
 
-                //ImageButton for report icon
+                // ImageButton for report icon
                 ImageButton btnViewReport = new ImageButton(container.getContext());
                 btnViewReport.setImageResource(R.drawable.report_icon);
                 btnViewReport.setLayoutParams(buttonLayoutParams);
                 btnViewReport.setBackgroundColor(Color.TRANSPARENT);
+
+                btnViewReport.setOnClickListener(v -> showReportDialog(record.getInno(), container.getContext()));
 
                 // Add buttons to the horizontal layout
                 horizontalLayout.addView(btnViewInvoice);
@@ -115,6 +125,7 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.MainViewHolder
             }
         }
     }
+
 
     public interface OnServiceRecordsClickListener {
         void onServiceRecordsClick(String vehicleNo, int position);
@@ -132,6 +143,63 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.MainViewHolder
             serviceRecordsContainer = itemView.findViewById(R.id.service_records_container);
         }
     }
+
+    private void showReportDialog(String inno, Context context) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        View customTitleView = LayoutInflater.from(context).inflate(R.layout.custom_dialog_title_service_report, null);
+
+        // Set custom title view
+        builder.setCustomTitle(customTitleView);
+
+        // Fetch details from tblvsum where inno = the service record number
+        String reportDetails = fetchReportDetails(inno);
+
+        // Create a TextView to display the report details
+        TextView reportTextView = new TextView(context);
+        reportTextView.setText(reportDetails);
+
+        // Set the custom font from res/font folder
+        reportTextView.setTypeface(ResourcesCompat.getFont(context, R.font.fmbindumathi));
+        reportTextView.setTextSize(16); // Adjust size
+
+        builder.setView(reportTextView);
+        builder.setPositiveButton("OK", (dialog, which) -> dialog.dismiss());
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+
+
+
+    private String fetchReportDetails(String inno) {
+        StringBuilder reportDetails = new StringBuilder();
+        try {
+            ConnectionHelper connectionHelper = new ConnectionHelper();
+            Connection connect = connectionHelper.connectionClass();
+            if (connect != null) {
+                String query = "SELECT * FROM tblvsum WHERE inno = '" + inno + "'";
+                Statement st = connect.createStatement();
+                ResultSet rs = st.executeQuery(query);
+
+                while (rs.next()) {
+                    String detail = rs.getString("detail");
+                    if (detail != null && !detail.isEmpty()) {
+                        reportDetails.append("• ").append(detail).append("\n").append("\n");
+                    }
+                }
+                connect.close();
+            } else {
+                reportDetails.append("Connection Error");
+            }
+        } catch (Exception ex) {
+            Log.e("Error", ex.getMessage());
+            reportDetails.append("Error fetching report details");
+        }
+        return reportDetails.toString();
+    }
+
+
 }
 
 
