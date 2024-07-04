@@ -30,6 +30,13 @@
         android:text="Odo Meter"
         android:textSize="18sp"
         android:textStyle="bold" />
+    <TextView
+        android:id="@+id/txt_next_service"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Next Service"
+        android:textSize="18sp"
+        android:textStyle="bold" />
 
     <LinearLayout
         android:id="@+id/service_records_container"

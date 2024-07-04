@@ -1,11 +1,16 @@
 package com.example.servicecenterapp;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -74,44 +79,61 @@ public class MainActivity extends AppCompatActivity implements MainAdapter.OnSer
         }
 
         img_btn_logout.setOnClickListener(v -> {
-            auth.signOut();
-            startActivity(new Intent(MainActivity.this, LoginActivity.class));
-            finish();
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this)
+                    .setTitle("Sign Out")
+                    .setMessage("Are you sure you want to sign out?")
+                    .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            // Sign out
+                            auth.signOut();
+                            startActivity(new Intent(MainActivity.this, LoginActivity.class));
+                            finish();
+                        }
+                    })
+                    .setNegativeButton(android.R.string.no, null);
+
+            Drawable alertIcon = ContextCompat.getDrawable(MainActivity.this, android.R.drawable.ic_dialog_alert);
+            if (alertIcon != null) {
+                alertIcon = DrawableCompat.wrap(alertIcon);
+                DrawableCompat.setTint(alertIcon, ContextCompat.getColor(MainActivity.this, R.color.orange));
+            }
+            builder.setIcon(alertIcon);
+            builder.show();
         });
     }
 
     private void loadUserInfo(String uid) {
-        db.collection("users").document(uid).get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        DocumentSnapshot document = task.getResult();
-                        if (document != null && document.exists()) {
-                            String firstName = document.getString("firstName");
-                            String lastName = document.getString("lastName");
-                            String phoneNumber = document.getString("phoneNumber");
-                            String email = document.getString("email");
-                            String customerId = document.getString("customer_id");
+    db.collection("users").document(uid).get()
+        .addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                DocumentSnapshot document = task.getResult();
+                if (document != null && document.exists()) {
+                    String firstName = document.getString("firstName");
+                    String lastName = document.getString("lastName");
+                    String phoneNumber = document.getString("phoneNumber");
+                    String email = document.getString("email");
+                    String customerId = document.getString("customer_id");
 
-                            txtFirstname.setText(firstName);
-                            txtLastname.setText(lastName);
-                            txtPhoneNumber.setText(phoneNumber);
-                            txtEmail.setText(email);
-                            txtCustomerId.setText(customerId);
+                    txtFirstname.setText(firstName);
+                    txtLastname.setText(lastName);
+                    txtPhoneNumber.setText(phoneNumber);
+                    txtEmail.setText(email);
+                    txtCustomerId.setText(customerId);
 
-                            // Fetch data from tblmain
-                            fetchDataFromSql(customerId);
-                            // Fetch balance from tblclist
-                            fetchBalance(customerId);
-                        } else {
-                            Log.d(TAG, "No such document");
-                            progressBar.setVisibility(View.GONE);  // Hide progress bar on failure
-                        }
-                    } else {
-                        Log.d(TAG, "get failed with ", task.getException());
-                        Toast.makeText(MainActivity.this, "Failed to load user details.", Toast.LENGTH_SHORT).show();
-                        progressBar.setVisibility(View.GONE);  // Hide progress bar on failure
-                    }
-                });
+                    // Fetch data from tblmain
+                    fetchDataFromSql(customerId);
+                    // Fetch balance from tblclist
+                    fetchBalance(customerId);
+                } else {
+                    Log.d(TAG, "No such document");
+                    progressBar.setVisibility(View.GONE);  // Hide progress bar on failure
+                }
+            } else {
+                Log.d(TAG, "get failed with ", task.getException());
+                Toast.makeText(MainActivity.this, "Failed to load user details.", Toast.LENGTH_SHORT).show();
+                progressBar.setVisibility(View.GONE);  // Hide progress bar on failure
+            }
+        });
     }
 
     private void fetchDataFromSql(String customerId) {
@@ -119,7 +141,7 @@ public class MainActivity extends AppCompatActivity implements MainAdapter.OnSer
             ConnectionHelper connectionHelper = new ConnectionHelper();
             connect = connectionHelper.connectionClass();
             if (connect != null) {
-                String query = "SELECT tm.vehino, tm.vehibrand, tm.odimeter, tm.date FROM tblmain tm " +
+                String query = "SELECT tm.vehino, tm.vehibrand, tm.odimeter,dbo.getoilusage (tm.vehino) as oil, tm.date FROM tblmain tm " +
                         "INNER JOIN (SELECT vehino, MAX(CONVERT(datetime, date, 105)) AS max_date FROM tblmain " +
                         "WHERE cusid = '" + customerId + "' GROUP BY vehino) subq " +
                         "ON tm.vehino = subq.vehino AND CONVERT(datetime, tm.date, 105) = subq.max_date " +
@@ -132,7 +154,9 @@ public class MainActivity extends AppCompatActivity implements MainAdapter.OnSer
                     String vehicleBrand = rs.getString("vehibrand");
                     String vehicleNo = rs.getString("vehino");
                     String odoMeter = rs.getString("odimeter");
-                    MainData mainData = new MainData(vehicleNo, vehicleBrand, odoMeter);
+                    String oil = rs.getString("oil");
+
+                    MainData mainData = new MainData(vehicleNo, vehicleBrand, odoMeter,oil);
 
                     // Fetch service records for the current vehicle
                     List<ServiceRecord> serviceRecords = fetchServiceRecords(vehicleNo);
@@ -159,13 +183,14 @@ public class MainActivity extends AppCompatActivity implements MainAdapter.OnSer
             ConnectionHelper connectionHelper = new ConnectionHelper();
             connect = connectionHelper.connectionClass();
             if (connect != null) {
-                String query = "SELECT top 5 inno FROM tblitemlist WHERE vehino = '" + vehicleNo + "' group by inno ORDER BY inno Desc";
+                String query = "SELECT top 5 inno, MAX(da) as da FROM tblitemlist WHERE vehino = '" + vehicleNo + "' GROUP BY inno ORDER BY inno Desc";
                 Statement st = connect.createStatement();
                 ResultSet rs = st.executeQuery(query);
 
                 while (rs.next()) {
                     String inno = rs.getString("inno");
-                    serviceRecords.add(new ServiceRecord(inno));
+                    String date = rs.getString("da");
+                    serviceRecords.add(new ServiceRecord(inno, date));
                 }
                 connect.close();
             } else {

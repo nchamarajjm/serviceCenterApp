@@ -73,23 +73,23 @@ public class LoginActivity extends AppCompatActivity {
 
             // Authenticate user with email and password
             auth.signInWithEmailAndPassword(email, password)
-                    .addOnCompleteListener(LoginActivity.this, task -> {
-                        progressBar.setVisibility(View.GONE);
-                        if (!task.isSuccessful()) {
-                            Toast.makeText(LoginActivity.this, "Authentication Failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+            .addOnCompleteListener(LoginActivity.this, task -> {
+                progressBar.setVisibility(View.GONE);
+                if (!task.isSuccessful()) {
+                    Toast.makeText(LoginActivity.this, "Authentication Failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                } else {
+                    FirebaseUser user = auth.getCurrentUser();
+                    if (user != null) {
+                        if (user.isEmailVerified()) {
+                            startActivity(new Intent(LoginActivity.this, LandingActivity.class));
+                            finish();
                         } else {
-                            FirebaseUser user = auth.getCurrentUser();
-                            if (user != null) {
-                                if (user.isEmailVerified()) {
-                                    startActivity(new Intent(LoginActivity.this, MainActivity.class));
-                                    finish();
-                                } else {
-                                    Toast.makeText(LoginActivity.this, "Please verify your email before logging in.", Toast.LENGTH_SHORT).show();
-                                    auth.signOut();
-                                }
-                            }
+                            Toast.makeText(LoginActivity.this, "Please verify your email before logging in.", Toast.LENGTH_SHORT).show();
+                            auth.signOut();
                         }
-                    });
+                    }
+                }
+            });
         });
 
         btnSendOtp.setOnClickListener(v -> {
@@ -155,15 +155,15 @@ public class LoginActivity extends AppCompatActivity {
 
     private void signInWithPhoneAuthCredential(PhoneAuthCredential credential) {
         auth.signInWithCredential(credential)
-                .addOnCompleteListener(this, task -> {
-                    if (task.isSuccessful()) {
-                        Toast.makeText(LoginActivity.this, "Phone number verified successfully", Toast.LENGTH_SHORT).show();
-                        startActivity(new Intent(LoginActivity.this, MainActivity.class));
-                        finish();
-                    } else {
-                        Toast.makeText(LoginActivity.this, "OTP verification failed: " + task.getException(), Toast.LENGTH_SHORT).show();
-                        Log.e(TAG, "OTP Verification Failed", task.getException());
-                    }
-                });
+        .addOnCompleteListener(this, task -> {
+            if (task.isSuccessful()) {
+                Toast.makeText(LoginActivity.this, "Phone number verified successfully", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(LoginActivity.this, LandingActivity.class));
+                finish();
+            } else {
+                Toast.makeText(LoginActivity.this, "OTP verification failed: " + task.getException(), Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "OTP Verification Failed", task.getException());
+            }
+        });
     }
 }

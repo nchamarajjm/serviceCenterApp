@@ -2,16 +2,15 @@ package com.example.servicecenterapp;
 
 import java.util.List;
 
-import java.util.List;
-
 public class MainData {
-    private String vehicleNo, vehicleBrand, odoMeter;
+    private String vehicleNo, vehicleBrand, odoMeter,oil;
     private List<ServiceRecord> serviceRecords; // Add this
 
-    public MainData(String vehicleNo, String vehicleBrand, String odoMeter) {
+    public MainData(String vehicleNo, String vehicleBrand, String odoMeter, String oil) {
         this.vehicleNo = vehicleNo;
         this.vehicleBrand = vehicleBrand;
         this.odoMeter = odoMeter;
+        this.oil=oil;
     }
 
     public String getVehicleNo() {
@@ -44,5 +43,13 @@ public class MainData {
 
     public void setServiceRecords(List<ServiceRecord> serviceRecords) {
         this.serviceRecords = serviceRecords;
+    }
+
+    public String getOil() {
+        return oil;
+    }
+
+    public void setOil(String oil) {
+        this.oil = oil;
     }
 }

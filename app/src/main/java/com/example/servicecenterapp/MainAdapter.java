@@ -52,9 +52,10 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.MainViewHolder
     @Override
     public void onBindViewHolder(@NonNull MainViewHolder holder, int position) {
         MainData mainData = mainDataList.get(position);
-        holder.txtVehicleNo.setText("Vehicle:    " + mainData.getVehicleNo());
-        holder.txtVehicleBrand.setText("Brand:        " + mainData.getVehicleBrand());
-        holder.txtOdometer.setText("Odo:           " + mainData.getOdoMeter());
+        holder.txtVehicleNo.setText("Vehicle:         " + mainData.getVehicleNo());
+        holder.txtVehicleBrand.setText("Brand:                " + mainData.getVehicleBrand());
+        holder.txtOdometer.setText("Odo:                    " + mainData.getOdoMeter());
+        holder.txtNextService.setText("Next Service:   " + mainData.getOil());
 
         boolean isExpanded = position == expandedPosition;
         holder.serviceRecordsContainer.setVisibility(isExpanded ? View.VISIBLE : View.GONE);
@@ -85,9 +86,9 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.MainViewHolder
                 LinearLayout horizontalLayout = new LinearLayout(container.getContext());
                 horizontalLayout.setOrientation(LinearLayout.HORIZONTAL);
 
-                //TextView for the service record
+                // TextView for the service record
                 TextView textView = new TextView(container.getContext());
-                textView.setText(record.getInno());
+                textView.setText(record.getInno() + "     " + record.getDate()); // Displaying both inno and date
                 textView.setTextSize(16);
                 textView.setTypeface(null, Typeface.BOLD);
 
@@ -115,6 +116,7 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.MainViewHolder
                 btnViewReport.setBackgroundColor(Color.TRANSPARENT);
 
                 btnViewReport.setOnClickListener(v -> showReportDialog(record.getInno(), container.getContext()));
+                btnViewInvoice.setOnClickListener(v -> showRServiceItemDialog(record.getInno(), container.getContext()));
 
                 // Add buttons to the horizontal layout
                 horizontalLayout.addView(btnViewInvoice);
@@ -127,12 +129,13 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.MainViewHolder
     }
 
 
+
     public interface OnServiceRecordsClickListener {
         void onServiceRecordsClick(String vehicleNo, int position);
     }
 
     public static class MainViewHolder extends RecyclerView.ViewHolder {
-        TextView txtVehicleNo, txtVehicleBrand, txtOdometer;
+        TextView txtVehicleNo, txtVehicleBrand, txtOdometer,txtNextService;
         LinearLayout serviceRecordsContainer;
 
         public MainViewHolder(@NonNull View itemView) {
@@ -140,6 +143,8 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.MainViewHolder
             txtVehicleNo = itemView.findViewById(R.id.txt_vehicle_no);
             txtVehicleBrand = itemView.findViewById(R.id.txt_vehicle_brand);
             txtOdometer = itemView.findViewById(R.id.txt_odo_meter);
+            txtNextService= itemView.findViewById(R.id.txt_next_service);
+
             serviceRecordsContainer = itemView.findViewById(R.id.service_records_container);
         }
     }
@@ -169,16 +174,13 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.MainViewHolder
         dialog.show();
     }
 
-
-
-
     private String fetchReportDetails(String inno) {
         StringBuilder reportDetails = new StringBuilder();
         try {
             ConnectionHelper connectionHelper = new ConnectionHelper();
             Connection connect = connectionHelper.connectionClass();
             if (connect != null) {
-                String query = "SELECT * FROM tblvsum WHERE inno = '" + inno + "'";
+                String query = "SELECT detail FROM tblvsum WHERE inno = '" + inno + "'";
                 Statement st = connect.createStatement();
                 ResultSet rs = st.executeQuery(query);
 
@@ -199,6 +201,57 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.MainViewHolder
         return reportDetails.toString();
     }
 
+    private void showRServiceItemDialog(String inno, Context context) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        View customTitleView = LayoutInflater.from(context).inflate(R.layout.custom_dialog_title_service_item, null);
+
+        // Set custom title view
+        builder.setCustomTitle(customTitleView);
+
+        // Fetch details from tblitemlist where inno = the service record number
+        String serviceItemDetails = fetchServiceItemDetails(inno);
+
+        // Create a TextView to display the report details
+        TextView serviceItemTextView = new TextView(context);
+        serviceItemTextView.setText(serviceItemDetails);
+
+        // Set the custom font from res/font folder
+        //serviceItemTextView.setTypeface(ResourcesCompat.getFont(context, R.font.fmbindumathi));
+        serviceItemTextView.setTextSize(16); // Adjust size
+
+        builder.setView(serviceItemTextView);
+        builder.setPositiveButton("OK", (dialog, which) -> dialog.dismiss());
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    private String fetchServiceItemDetails(String inno) {
+        StringBuilder serviceItemDetails = new StringBuilder();
+        try {
+            ConnectionHelper connectionHelper = new ConnectionHelper();
+            Connection connect = connectionHelper.connectionClass();
+            if (connect != null) {
+                String query = "SELECT des FROM tblitemlist WHERE inno = '" + inno + "'";
+                Statement st = connect.createStatement();
+                ResultSet rs = st.executeQuery(query);
+
+                while (rs.next()) {
+                    String detail = rs.getString("des");
+                    if (detail != null && !detail.isEmpty()) {
+                        serviceItemDetails.append("• ").append(detail).append("\n").append("\n");
+                    }
+                }
+                connect.close();
+            } else {
+                serviceItemDetails.append("Connection Error");
+            }
+        } catch (Exception ex) {
+            Log.e("Error", ex.getMessage());
+            serviceItemDetails.append("Error fetching report details");
+        }
+        return serviceItemDetails.toString();
+    }
 
 }
 
