@@ -53,9 +53,9 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.MainViewHolder
     public void onBindViewHolder(@NonNull MainViewHolder holder, int position) {
         MainData mainData = mainDataList.get(position);
         holder.txtVehicleNo.setText("Vehicle:         " + mainData.getVehicleNo());
-        holder.txtVehicleBrand.setText("Brand:                " + mainData.getVehicleBrand());
-        holder.txtOdometer.setText("Odo:                    " + mainData.getOdoMeter());
-        holder.txtNextService.setText("Next Service:   " + mainData.getOil());
+        holder.txtVehicleBrand.setText("Brand:              " + mainData.getVehicleBrand());
+        holder.txtOdometer.setText("Odo:                 " + mainData.getOdoMeter()+" Km");
+        holder.txtNextService.setText("Next Service:  " + mainData.getOil()+" Km");
 
         boolean isExpanded = position == expandedPosition;
         holder.serviceRecordsContainer.setVisibility(isExpanded ? View.VISIBLE : View.GONE);
