@@ -1,8 +1,11 @@
 package com.example.servicecenterapp;
 
 import android.app.DatePickerDialog;
+import android.app.ProgressDialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -16,9 +19,6 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
-import androidx.core.content.res.ResourcesCompat;
-import androidx.core.graphics.drawable.DrawableCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -40,7 +40,7 @@ public class ApoinmentActivity extends AppCompatActivity {
 
     private FirebaseAuth auth;
     private FirebaseFirestore db;
-    private String customerId,phoneNumber,firstName,lastName;
+    private String customerId, phoneNumber, firstName, lastName;
     private ImageView img_logout_button;
     private TextView title_text_username;
     private EditText datePicker, timePicker, commentEditText;
@@ -48,6 +48,7 @@ public class ApoinmentActivity extends AppCompatActivity {
     private Spinner vehicleSpinner;
     private static final String TAG = "ApoinmentActivity";
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private ProgressDialog progressDialog, dataLoadingDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,8 +66,18 @@ public class ApoinmentActivity extends AppCompatActivity {
         commentEditText = findViewById(R.id.comment_box);
         makeAppointmentButton = findViewById(R.id.make_appointment_button);
         vehicleSpinner = findViewById(R.id.vehicle_spinner);
+
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Sending email...");
+        progressDialog.setCancelable(false);
+
+        dataLoadingDialog = new ProgressDialog(this);
+        dataLoadingDialog.setMessage("Loading data...");
+        dataLoadingDialog.setCancelable(false);
+
         FirebaseUser user = auth.getCurrentUser();
         if (user != null) {
+            dataLoadingDialog.show(); // Show data loading dialog
             loadUserInfo(user.getUid());
         } else {
             Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
@@ -109,10 +120,12 @@ public class ApoinmentActivity extends AppCompatActivity {
                             loadUserVehicles(customerId);
                         } else {
                             Log.d(TAG, "No such document");
+                            dataLoadingDialog.dismiss(); // Dismiss data loading dialog
                         }
                     } else {
                         Log.d(TAG, "get failed with ", task.getException());
                         Toast.makeText(ApoinmentActivity.this, "Failed to load user details.", Toast.LENGTH_SHORT).show();
+                        dataLoadingDialog.dismiss(); // Dismiss data loading dialog
                     }
                 });
     }
@@ -128,7 +141,6 @@ public class ApoinmentActivity extends AppCompatActivity {
             datePicker.setText(selectedDate);
         }, year, month, day);
 
-        // Set the minimum date to the current date
         datePickerDialog.getDatePicker().setMinDate(calendar.getTimeInMillis());
         datePickerDialog.show();
     }
@@ -141,7 +153,7 @@ public class ApoinmentActivity extends AppCompatActivity {
         TimePickerDialog timePickerDialog = new TimePickerDialog(this, (view, hourOfDay, minute1) -> {
             String selectedTime = formatTime(hourOfDay, minute1);
             timePicker.setText(selectedTime);
-        }, hour, minute, false); // Set false for 12-hour clock with AM/PM
+        }, hour, minute, false);
 
         timePickerDialog.show();
     }
@@ -153,11 +165,13 @@ public class ApoinmentActivity extends AppCompatActivity {
 
         String amPm = (datetime.get(Calendar.AM_PM) == Calendar.AM) ? "AM" : "PM";
         int hour = datetime.get(Calendar.HOUR);
-        if (hour == 0) hour = 12; // Adjust for 12 AM and 12 PM
+        if (hour == 0) hour = 12;
 
         return String.format("%02d:%02d %s", hour, minute, amPm);
     }
+
     private void loadUserVehicles(String customerId) {
+        dataLoadingDialog.show(); // Show data loading dialog
         List<String> vehicles = new ArrayList<>();
         vehicles.add("Select Vehicle");
 
@@ -182,12 +196,15 @@ public class ApoinmentActivity extends AppCompatActivity {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, vehicles);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         vehicleSpinner.setAdapter(adapter);
+
+        dataLoadingDialog.dismiss(); // Dismiss data loading dialog
     }
+
     private void makeAppointment() {
         String date = datePicker.getText().toString();
         String time = timePicker.getText().toString();
         String comment = commentEditText.getText().toString();
-        String vehicleNumber = vehicleSpinner.getSelectedItem().toString() ;
+        String vehicleNumber = vehicleSpinner.getSelectedItem().toString();
         if (TextUtils.isEmpty(date) || TextUtils.isEmpty(time) || TextUtils.isEmpty(comment) || TextUtils.isEmpty(vehicleNumber)) {
             Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
             return;
@@ -197,17 +214,81 @@ public class ApoinmentActivity extends AppCompatActivity {
         if (user != null) {
             String userEmail = user.getEmail();
 
+            progressDialog.show(); // Show the progress dialog
+
             executorService.execute(() -> {
                 try {
+                    // Sending email
                     MailSender mailSender = new MailSender("chamaranishantha9@gmail.com", "vhbc acyw vlnt sick");
                     mailSender.sendMail("chamarajjm@gmail.com", "New Appointment",
-                            "Customer: "+firstName+" "+lastName+"\nContact Number: "+phoneNumber+"\nDate: " + date + "\nTime: " + time + "\nVehicle Number: " + vehicleNumber + "\nComment: " + comment);
-                    runOnUiThread(() -> Toast.makeText(ApoinmentActivity.this, "Email sent successfully", Toast.LENGTH_SHORT).show());
+                            "Customer: " + firstName + " " + lastName + "\nContact Number: " + phoneNumber + "\nDate: " + date + "\nTime: " + time + "\nVehicle Number: " + vehicleNumber + "\nService: " + comment);
+
+                    // After sending email, prepare WhatsApp message
+                    String whatsappMessage = "New Appointment\n" +
+                            "Customer: " + firstName + " " + lastName + "\n" +
+                            "Contact Number: " + phoneNumber + "\n" +
+                            "Date: " + date + "\n" +
+                            "Time: " + time + "\n" +
+                            "Vehicle Number: " + vehicleNumber + "\n" +
+                            "Service: " + comment;
+
+                    // Check if WhatsApp Business is installed
+                    if (isWhatsAppBusinessInstalled()) {
+                        // Launch WhatsApp Business
+                        Intent whatsappIntent = new Intent(Intent.ACTION_VIEW);
+                        whatsappIntent.setPackage("com.whatsapp.w4b");
+                        String url = "https://wa.me/+94706222111?text=" + Uri.encode(whatsappMessage);
+                        whatsappIntent.setData(Uri.parse(url));
+                        startActivity(whatsappIntent);
+                    } else if (isWhatsAppInstalled()) {
+                        // Launch regular WhatsApp
+                        Intent whatsappIntent = new Intent(Intent.ACTION_VIEW);
+                        whatsappIntent.setPackage("com.whatsapp");
+                        String url = "https://wa.me/+94706222111?text=" + Uri.encode(whatsappMessage);
+                        whatsappIntent.setData(Uri.parse(url));
+                        startActivity(whatsappIntent);
+                    } else {
+                        runOnUiThread(() -> {
+                            Toast.makeText(ApoinmentActivity.this, "WhatsApp or WhatsApp Business is not installed", Toast.LENGTH_SHORT).show();
+                        });
+                    }
+
+                    runOnUiThread(() -> {
+                        progressDialog.dismiss(); // Dismiss the progress dialog
+                        Toast.makeText(ApoinmentActivity.this, "Email sent successfully", Toast.LENGTH_SHORT).show();
+                    });
                 } catch (MessagingException e) {
-                    runOnUiThread(() -> Toast.makeText(ApoinmentActivity.this, "Failed to send email: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                    runOnUiThread(() -> {
+                        progressDialog.dismiss(); // Dismiss the progress dialog
+                        Toast.makeText(ApoinmentActivity.this, "Failed to send email: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    });
                     Log.e(TAG, "Failed to send email", e);
                 }
             });
         }
     }
+
+    private boolean isWhatsAppInstalled() {
+        // Check if regular WhatsApp is installed on the device
+        PackageManager pm = getPackageManager();
+        try {
+            pm.getPackageInfo("com.whatsapp", PackageManager.GET_ACTIVITIES);
+            return true;
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
+    }
+
+    private boolean isWhatsAppBusinessInstalled() {
+        // Check if WhatsApp Business is installed on the device
+        PackageManager pm = getPackageManager();
+        try {
+            pm.getPackageInfo("com.whatsapp.w4b", PackageManager.GET_ACTIVITIES);
+            return true;
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
+    }
+
+
 }

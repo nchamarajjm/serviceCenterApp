@@ -5,15 +5,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
-import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -28,10 +27,9 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.text.DecimalFormat;
-import java.util.List;
 
 public class LandingActivity extends AppCompatActivity {
-    private CardView cardMyVehicles,card_apoinment,card_transfers,card_myCredit,card_myProfile,card_contactUs;
+    private CardView cardMyVehicles, card_apoinment, card_transfers, card_myCredit, card_myProfile, card_contactUs;
     private FirebaseAuth auth;
     private TextView title_view;
     private FirebaseFirestore db;
@@ -39,6 +37,8 @@ public class LandingActivity extends AppCompatActivity {
     private Connection connect;
     private String customerId;
     private static final String TAG = "LandingActivity";
+    private ProgressDialog progressDialog;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,11 +54,16 @@ public class LandingActivity extends AppCompatActivity {
         card_myCredit = findViewById(R.id.card_myCredit);
         card_myProfile = findViewById(R.id.card_myProfile);
         card_contactUs = findViewById(R.id.card_contactUs);
-        img_logout_button =findViewById(R.id.img_logout_button);
+        img_logout_button = findViewById(R.id.img_logout_button);
         title_view = findViewById(R.id.title_view);
+
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Loading...");
+        progressDialog.setCancelable(false);
 
         FirebaseUser user = auth.getCurrentUser();
         if (user != null) {
+            progressDialog.show();
             loadUserInfo(user.getUid());
         } else {
             Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
@@ -68,17 +73,17 @@ public class LandingActivity extends AppCompatActivity {
 
         img_logout_button.setOnClickListener(v -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(LandingActivity.this)
-                .setTitle("Sign Out")
-                .setMessage("Are you sure you want to sign out?")
-                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                        // Sign out
-                        auth.signOut();
-                        startActivity(new Intent(LandingActivity.this, LoginActivity.class));
-                        finish();
-                    }
-                })
-                .setNegativeButton(android.R.string.no, null);
+                    .setTitle("Sign Out")
+                    .setMessage("Are you sure you want to sign out?")
+                    .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            // Sign out
+                            auth.signOut();
+                            startActivity(new Intent(LandingActivity.this, LoginActivity.class));
+                            finish();
+                        }
+                    })
+                    .setNegativeButton(android.R.string.no, null);
 
             Drawable alertIcon = ContextCompat.getDrawable(LandingActivity.this, android.R.drawable.ic_dialog_alert);
             if (alertIcon != null) {
@@ -114,62 +119,89 @@ public class LandingActivity extends AppCompatActivity {
         card_myCredit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                progressDialog.show();
                 fetchBalance(customerId);
             }
         });
-
-    }
-    private void loadUserInfo(String uid) {
-        db.collection("users").document(uid).get()
-        .addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                DocumentSnapshot document = task.getResult();
-                if (document != null && document.exists()) {
-                    String firstName = document.getString("firstName");
-                    String lastName = document.getString("lastName");
-                    customerId = document.getString("customer_id");
-
-                    title_view.setText("Welcome, "+firstName+ " " +lastName);
-                    //fetchBalance(customerId);
-                } else {
-                    Log.d(TAG, "No such document");
-                }
-            } else {
-                Log.d(TAG, "get failed with ", task.getException());
-                Toast.makeText(LandingActivity.this, "Failed to load user details.", Toast.LENGTH_SHORT).show();
+        card_myProfile.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Create an Intent to start MainActivity
+                Intent intent = new Intent(LandingActivity.this, ProfileActivity.class);
+                startActivity(intent);
+            }
+        });
+        card_contactUs.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Create an Intent to start MainActivity
+                Intent intent = new Intent(LandingActivity.this, ContactActivity.class);
+                startActivity(intent);
             }
         });
     }
 
-    private void fetchBalance(String customerId) {
-        try {
-            ConnectionHelper connectionHelper = new ConnectionHelper();
-            connect = connectionHelper.connectionClass();
-            if (connect != null) {
-                String query = "SELECT balance FROM tblclist WHERE ownerid = '" + customerId + "'";
-                Statement st = connect.createStatement();
-                ResultSet rs = st.executeQuery(query);
+    private void loadUserInfo(String uid) {
+        db.collection("users").document(uid).get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot document = task.getResult();
+                        if (document != null && document.exists()) {
+                            String firstName = document.getString("firstName");
+                            String lastName = document.getString("lastName");
+                            customerId = document.getString("customer_id");
 
-                if (rs.next()) {
-                    double balance = rs.getDouble("balance");
-                    DecimalFormat df = new DecimalFormat("#.00");  // formatter with two decimal places
-                    String formattedBalance = df.format(balance);
-
-                    // Show dialog with balance
-                    showBalanceDialog(formattedBalance);
-                } else {
-                    // Handle case where no balance found
-                    Toast.makeText(this, "No balance found for this customer", Toast.LENGTH_SHORT).show();
-                    Log.i("UserId",customerId);
-                }
-                connect.close();
-            } else {
-                Toast.makeText(this, "Connection Error", Toast.LENGTH_SHORT).show();
-            }
-        } catch (Exception ex) {
-            Log.e("Error", ex.getMessage());
-        }
+                            title_view.setText("Welcome, " + firstName + " " + lastName);
+                            progressDialog.dismiss();
+                        } else {
+                            Log.d(TAG, "No such document");
+                            progressDialog.dismiss();
+                        }
+                    } else {
+                        Log.d(TAG, "get failed with ", task.getException());
+                        Toast.makeText(LandingActivity.this, "Failed to load user details.", Toast.LENGTH_SHORT).show();
+                        progressDialog.dismiss();
+                    }
+                });
     }
+
+    private void fetchBalance(String customerId) {
+        new Thread(() -> {
+            try {
+                ConnectionHelper connectionHelper = new ConnectionHelper();
+                connect = connectionHelper.connectionClass();
+                if (connect != null) {
+                    String query = "SELECT balance FROM tblclist WHERE ownerid = '" + customerId + "'";
+                    Statement st = connect.createStatement();
+                    ResultSet rs = st.executeQuery(query);
+
+                    if (rs.next()) {
+                        double balance = rs.getDouble("balance");
+                        DecimalFormat df = new DecimalFormat("#.00");  // formatter with two decimal places
+                        String formattedBalance = df.format(balance);
+
+                        // Show dialog with balance on the main thread
+                        runOnUiThread(() -> showBalanceDialog(formattedBalance));
+                    } else {
+                        // Handle case where no balance found on the main thread
+                        runOnUiThread(() -> {
+                            Toast.makeText(this, "No balance found for this customer", Toast.LENGTH_SHORT).show();
+                            Log.i("UserId", customerId);
+                        });
+                    }
+                    connect.close();
+                } else {
+                    runOnUiThread(() -> Toast.makeText(this, "Connection Error", Toast.LENGTH_SHORT).show());
+                }
+            } catch (Exception ex) {
+                Log.e("Error", ex.getMessage());
+                runOnUiThread(() -> Toast.makeText(this, "Error fetching balance", Toast.LENGTH_SHORT).show());
+            } finally {
+                runOnUiThread(() -> progressDialog.dismiss());
+            }
+        }).start();
+    }
+
     private void showBalanceDialog(String balance) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Credit Balance");
@@ -183,5 +215,4 @@ public class LandingActivity extends AppCompatActivity {
         AlertDialog dialog = builder.create();
         dialog.show();
     }
-
 }

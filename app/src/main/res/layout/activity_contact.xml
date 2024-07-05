@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Contact Information CardView -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/contact_card_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp">
+
+        <LinearLayout
+            android:id="@+id/contact_info_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/text_contact_number"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Contact Number: 0362222111"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                android:paddingBottom="8dp"/>
+
+            <TextView
+                android:id="@+id/text_address"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Address: No: 255 B/1 Ratnapura Road, Getahetta 70620"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                android:paddingBottom="8dp"/>
+
+            <TextView
+                android:id="@+id/text_open_close_time"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Open Close Time: 7 AM–5 PM Monday to Sunday"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- WebView to Display Map -->
+    <WebView
+        android:id="@+id/webview"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:layout_below="@id/contact_card_view" />
+
+</RelativeLayout>

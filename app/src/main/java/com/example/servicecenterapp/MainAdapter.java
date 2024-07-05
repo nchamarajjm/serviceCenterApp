@@ -55,7 +55,22 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.MainViewHolder
         holder.txtVehicleNo.setText("Vehicle:         " + mainData.getVehicleNo());
         holder.txtVehicleBrand.setText("Brand:              " + mainData.getVehicleBrand());
         holder.txtOdometer.setText("Odo:                 " + mainData.getOdoMeter()+" Km");
-        holder.txtNextService.setText("Next Service:  " + mainData.getOil()+" Km");
+
+        Integer odo=0;
+        Integer oil=0;
+        Integer nexService=0;
+
+        if (mainData.getOdoMeter() != null && !mainData.getOdoMeter().isEmpty()) {
+            odo = Integer.valueOf(mainData.getOdoMeter());
+        }
+
+        if (mainData.getOil() != null && !mainData.getOil().isEmpty()) {
+            oil = Integer.valueOf(mainData.getOil());
+        }
+
+        nexService= oil+odo;
+
+        holder.txtNextService.setText("Next Service:  " + nexService+" Km");
 
         boolean isExpanded = position == expandedPosition;
         holder.serviceRecordsContainer.setVisibility(isExpanded ? View.VISIBLE : View.GONE);
