@@ -220,7 +220,7 @@ public class ApoinmentActivity extends AppCompatActivity {
                 try {
                     // Sending email
                     MailSender mailSender = new MailSender("chamaranishantha9@gmail.com", "vhbc acyw vlnt sick");
-                    mailSender.sendMail("chamarajjm@gmail.com", "New Appointment",
+                    mailSender.sendMail("savontaservice15@gmail.com", "New Appointment",
                             "Customer: " + firstName + " " + lastName + "\nContact Number: " + phoneNumber + "\nDate: " + date + "\nTime: " + time + "\nVehicle Number: " + vehicleNumber + "\nService: " + comment);
 
                     // After sending email, prepare WhatsApp message
