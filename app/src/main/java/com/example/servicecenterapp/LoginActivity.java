@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatDelegate;
 import com.google.firebase.FirebaseException;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.auth.PhoneAuthCredential;
 import com.google.firebase.auth.PhoneAuthOptions;
@@ -73,23 +74,22 @@ public class LoginActivity extends AppCompatActivity {
 
             // Authenticate user with email and password
             auth.signInWithEmailAndPassword(email, password)
-            .addOnCompleteListener(LoginActivity.this, task -> {
-                progressBar.setVisibility(View.GONE);
-                if (!task.isSuccessful()) {
-                    Toast.makeText(LoginActivity.this, "Authentication Failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                } else {
-                    FirebaseUser user = auth.getCurrentUser();
-                    if (user != null) {
-                        if (user.isEmailVerified()) {
-                            startActivity(new Intent(LoginActivity.this, LandingActivity.class));
-                            finish();
+                    .addOnCompleteListener(LoginActivity.this, task -> {
+                        progressBar.setVisibility(View.GONE);
+                        if (!task.isSuccessful()) {
+                            Toast.makeText(LoginActivity.this, "Authentication Failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                         } else {
-                            Toast.makeText(LoginActivity.this, "Please verify your email before logging in.", Toast.LENGTH_SHORT).show();
-                            auth.signOut();
+                            FirebaseUser user = auth.getCurrentUser();
+                            if (user != null) {
+                                if (user.isEmailVerified()) {
+                                    navigateBasedOnUserType(user.getUid());
+                                } else {
+                                    Toast.makeText(LoginActivity.this, "Please verify your email before logging in.", Toast.LENGTH_SHORT).show();
+                                    auth.signOut();
+                                }
+                            }
                         }
-                    }
-                }
-            });
+                    });
         });
 
         btnSendOtp.setOnClickListener(v -> {
@@ -155,15 +155,43 @@ public class LoginActivity extends AppCompatActivity {
 
     private void signInWithPhoneAuthCredential(PhoneAuthCredential credential) {
         auth.signInWithCredential(credential)
-        .addOnCompleteListener(this, task -> {
-            if (task.isSuccessful()) {
-                Toast.makeText(LoginActivity.this, "Phone number verified successfully", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(LoginActivity.this, LandingActivity.class));
-                finish();
-            } else {
-                Toast.makeText(LoginActivity.this, "OTP verification failed: " + task.getException(), Toast.LENGTH_SHORT).show();
-                Log.e(TAG, "OTP Verification Failed", task.getException());
-            }
-        });
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        FirebaseUser user = auth.getCurrentUser();
+                        if (user != null) {
+                            navigateBasedOnUserType(user.getUid());
+                        }
+                    } else {
+                        Toast.makeText(LoginActivity.this, "OTP verification failed: " + task.getException(), Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "OTP Verification Failed", task.getException());
+                    }
+                });
+    }
+
+    private void navigateBasedOnUserType(String uid) {
+        db.collection("users").document(uid).get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot document = task.getResult();
+                        if (document != null && document.exists()) {
+                            Long userType = document.getLong("user_type");
+                            if (userType != null) {
+                                if (userType == 1) {
+                                    startActivity(new Intent(LoginActivity.this, UserManageActivity.class));
+                                } else {
+                                    startActivity(new Intent(LoginActivity.this, LandingActivity.class));
+                                }
+                                finish();
+                            } else {
+                                Toast.makeText(LoginActivity.this, "User type is undefined.", Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            Toast.makeText(LoginActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(LoginActivity.this, "Failed to fetch user data: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "Failed to fetch user data", task.getException());
+                    }
+                });
     }
 }
