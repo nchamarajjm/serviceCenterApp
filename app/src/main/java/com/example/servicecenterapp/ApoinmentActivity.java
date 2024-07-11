@@ -107,27 +107,27 @@ public class ApoinmentActivity extends AppCompatActivity {
 
     private void loadUserInfo(String uid) {
         db.collection("users").document(uid).get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        DocumentSnapshot document = task.getResult();
-                        if (document != null && document.exists()) {
-                            firstName = document.getString("firstName");
-                            lastName = document.getString("lastName");
-                            phoneNumber = document.getString("phoneNumber");
-                            customerId = document.getString("customer_id");
+        .addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                DocumentSnapshot document = task.getResult();
+                if (document != null && document.exists()) {
+                    firstName = document.getString("firstName");
+                    lastName = document.getString("lastName");
+                    phoneNumber = document.getString("phoneNumber");
+                    customerId = document.getString("customer_id");
 
-                            title_text_username.setText("Welcome, " + firstName + " " + lastName);
-                            loadUserVehicles(customerId);
-                        } else {
-                            Log.d(TAG, "No such document");
-                            dataLoadingDialog.dismiss(); // Dismiss data loading dialog
-                        }
-                    } else {
-                        Log.d(TAG, "get failed with ", task.getException());
-                        Toast.makeText(ApoinmentActivity.this, "Failed to load user details.", Toast.LENGTH_SHORT).show();
-                        dataLoadingDialog.dismiss(); // Dismiss data loading dialog
-                    }
-                });
+                    title_text_username.setText("Welcome, " + firstName);
+                    loadUserVehicles(customerId);
+                } else {
+                    Log.d(TAG, "No such document");
+                    dataLoadingDialog.dismiss(); // Dismiss data loading dialog
+                }
+            } else {
+                Log.d(TAG, "get failed with ", task.getException());
+                Toast.makeText(ApoinmentActivity.this, "Failed to load user details.", Toast.LENGTH_SHORT).show();
+                dataLoadingDialog.dismiss(); // Dismiss data loading dialog
+            }
+        });
     }
 
     private void showDatePickerDialog() {
@@ -219,7 +219,7 @@ public class ApoinmentActivity extends AppCompatActivity {
             executorService.execute(() -> {
                 try {
                     // Sending email
-                    MailSender mailSender = new MailSender("chamaranishantha9@gmail.com", "vhbc acyw vlnt sick");
+                    MailSender mailSender = new MailSender("savontainfo@gmail.com", "rbxe bkzt zkhr syps");
                     mailSender.sendMail("savontaservice15@gmail.com", "New Appointment",
                             "Customer: " + firstName + " " + lastName + "\nContact Number: " + phoneNumber + "\nDate: " + date + "\nTime: " + time + "\nVehicle Number: " + vehicleNumber + "\nService: " + comment);
 
@@ -289,6 +289,4 @@ public class ApoinmentActivity extends AppCompatActivity {
             return false;
         }
     }
-
-
 }

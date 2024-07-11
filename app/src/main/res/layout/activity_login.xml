@@ -83,6 +83,19 @@
         android:backgroundTint="@color/light_blue"
         app:cornerRadius="8dp"/>
 
+    <TextView
+        android:id="@+id/textViewLoginIssue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:text="If there any issue with login or registration please contact 036 2222111"
+        android:textAlignment="textStart"
+        android:textColor="@color/red"
+        android:textSize="16sp"
+        android:visibility="invisible" />
+
+
     <!-- Invisible Section for OTP -->
     <LinearLayout
         android:id="@+id/otp_section"

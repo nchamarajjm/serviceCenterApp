@@ -115,7 +115,7 @@ public class MainActivity extends AppCompatActivity implements MainAdapter.OnSer
                     String customerId = document.getString("customer_id");
 
                     txtFirstname.setText(firstName);
-                    txtLastname.setText(lastName);
+                    //txtLastname.setText(lastName);
                     txtPhoneNumber.setText(phoneNumber);
                     txtEmail.setText(email);
                     txtCustomerId.setText(customerId);
@@ -212,7 +212,7 @@ public class MainActivity extends AppCompatActivity implements MainAdapter.OnSer
             ConnectionHelper connectionHelper = new ConnectionHelper();
             connect = connectionHelper.connectionClass();
             if (connect != null) {
-                String query = "SELECT balance FROM tblclist WHERE ownerid = '" + customerId + "'";
+                String query = "SELECT balance FROM tblcustomer WHERE ownerid = '" + customerId + "'";
                 Statement st = connect.createStatement();
                 ResultSet rs = st.executeQuery(query);
 

@@ -119,7 +119,8 @@ public class RegisterActivity extends AppCompatActivity {
                         userDetails.put("phoneNumber", "+94"+phoneNumber);
                         userDetails.put("email", email);
                         userDetails.put("customer_id", "");
-                        userDetails.put("user_type", "0");
+                        userDetails.put("user_type", 0);
+                        userDetails.put("enabled", true);
 
                         db.collection("users").document(uid)
                         .set(userDetails)

@@ -27,6 +27,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
@@ -60,17 +62,24 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.MainViewHolder
         Integer oil=0;
         Integer nexService=0;
 
-        if (mainData.getOdoMeter() != null && !mainData.getOdoMeter().isEmpty()) {
-            odo = Integer.valueOf(mainData.getOdoMeter());
+        try {
+            if (mainData.getOdoMeter() != null && !mainData.getOdoMeter().isEmpty()) {
+                odo = Integer.valueOf(mainData.getOdoMeter());
+            }
+
+            if (mainData.getOil() != null && !mainData.getOil().isEmpty()) {
+                oil = Integer.valueOf(mainData.getOil());
+            }
+
+            nexService= oil+odo;
+
+            holder.txtNextService.setText("Next Service:  " + nexService+" Km");
+
+        } catch (Exception err){
+            Log.e("Error", err.getMessage());
+            Toast.makeText(holder.itemView.getContext(), "Error while receiving odometer value" + err.getMessage(), Toast.LENGTH_SHORT).show();
         }
 
-        if (mainData.getOil() != null && !mainData.getOil().isEmpty()) {
-            oil = Integer.valueOf(mainData.getOil());
-        }
-
-        nexService= oil+odo;
-
-        holder.txtNextService.setText("Next Service:  " + nexService+" Km");
 
         boolean isExpanded = position == expandedPosition;
         holder.serviceRecordsContainer.setVisibility(isExpanded ? View.VISIBLE : View.GONE);

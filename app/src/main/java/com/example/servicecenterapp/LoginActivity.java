@@ -74,22 +74,22 @@ public class LoginActivity extends AppCompatActivity {
 
             // Authenticate user with email and password
             auth.signInWithEmailAndPassword(email, password)
-                    .addOnCompleteListener(LoginActivity.this, task -> {
-                        progressBar.setVisibility(View.GONE);
-                        if (!task.isSuccessful()) {
-                            Toast.makeText(LoginActivity.this, "Authentication Failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+            .addOnCompleteListener(LoginActivity.this, task -> {
+                progressBar.setVisibility(View.GONE);
+                if (!task.isSuccessful()) {
+                    Toast.makeText(LoginActivity.this, "Authentication Failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                } else {
+                    FirebaseUser user = auth.getCurrentUser();
+                    if (user != null) {
+                        if (user.isEmailVerified()) {
+                            navigateBasedOnUserType(user.getUid());
                         } else {
-                            FirebaseUser user = auth.getCurrentUser();
-                            if (user != null) {
-                                if (user.isEmailVerified()) {
-                                    navigateBasedOnUserType(user.getUid());
-                                } else {
-                                    Toast.makeText(LoginActivity.this, "Please verify your email before logging in.", Toast.LENGTH_SHORT).show();
-                                    auth.signOut();
-                                }
-                            }
+                            Toast.makeText(LoginActivity.this, "Please verify your email before logging in.", Toast.LENGTH_SHORT).show();
+                            auth.signOut();
                         }
-                    });
+                    }
+                }
+            });
         });
 
         btnSendOtp.setOnClickListener(v -> {
@@ -114,35 +114,35 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void sendVerificationSms(String phoneNumber) {
-        PhoneAuthOptions options = PhoneAuthOptions.newBuilder(auth)
-                .setPhoneNumber(phoneNumber)
-                .setTimeout(60L, TimeUnit.SECONDS) // Adjust the timeout as needed
-                .setActivity(this)
-                .setCallbacks(new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
-                    @Override
-                    public void onVerificationCompleted(@NonNull PhoneAuthCredential phoneAuthCredential) {
-                        String code = phoneAuthCredential.getSmsCode();
-                        if (code != null) {
-                            inputOtp.setText(code);
-                            verifyOtp(code);
-                        }
-                    }
+    PhoneAuthOptions options = PhoneAuthOptions.newBuilder(auth)
+        .setPhoneNumber(phoneNumber)
+        .setTimeout(60L, TimeUnit.SECONDS) // Adjust the timeout as needed
+        .setActivity(this)
+        .setCallbacks(new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+            @Override
+            public void onVerificationCompleted(@NonNull PhoneAuthCredential phoneAuthCredential) {
+                String code = phoneAuthCredential.getSmsCode();
+                if (code != null) {
+                    inputOtp.setText(code);
+                    verifyOtp(code);
+                }
+            }
 
-                    @Override
-                    public void onVerificationFailed(@NonNull FirebaseException e) {
-                        Toast.makeText(LoginActivity.this, "Failed to send SMS verification: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        Log.e(TAG, "SMS Verification Failed", e);
-                    }
+            @Override
+            public void onVerificationFailed(@NonNull FirebaseException e) {
+                Toast.makeText(LoginActivity.this, "Failed to send SMS verification: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "SMS Verification Failed", e);
+            }
 
-                    @Override
-                    public void onCodeSent(@NonNull String verificationId,
-                                           @NonNull PhoneAuthProvider.ForceResendingToken token) {
-                        LoginActivity.this.verificationId = verificationId;
-                        LoginActivity.this.resendToken = token;
-                        Toast.makeText(LoginActivity.this, "OTP sent to phone number.", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .build();
+            @Override
+            public void onCodeSent(@NonNull String verificationId,
+                                   @NonNull PhoneAuthProvider.ForceResendingToken token) {
+                LoginActivity.this.verificationId = verificationId;
+                LoginActivity.this.resendToken = token;
+                Toast.makeText(LoginActivity.this, "OTP sent to phone number.", Toast.LENGTH_SHORT).show();
+            }
+        })
+        .build();
         PhoneAuthProvider.verifyPhoneNumber(options);
     }
 
@@ -154,44 +154,52 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void signInWithPhoneAuthCredential(PhoneAuthCredential credential) {
-        auth.signInWithCredential(credential)
-                .addOnCompleteListener(this, task -> {
-                    if (task.isSuccessful()) {
-                        FirebaseUser user = auth.getCurrentUser();
-                        if (user != null) {
-                            navigateBasedOnUserType(user.getUid());
-                        }
-                    } else {
-                        Toast.makeText(LoginActivity.this, "OTP verification failed: " + task.getException(), Toast.LENGTH_SHORT).show();
-                        Log.e(TAG, "OTP Verification Failed", task.getException());
-                    }
-                });
+    auth.signInWithCredential(credential)
+        .addOnCompleteListener(this, task -> {
+            if (task.isSuccessful()) {
+                FirebaseUser user = auth.getCurrentUser();
+                if (user != null) {
+                    navigateBasedOnUserType(user.getUid());
+                }
+            } else {
+                Toast.makeText(LoginActivity.this, "OTP verification failed: " + task.getException(), Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "OTP Verification Failed", task.getException());
+            }
+        });
     }
 
     private void navigateBasedOnUserType(String uid) {
-        db.collection("users").document(uid).get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        DocumentSnapshot document = task.getResult();
-                        if (document != null && document.exists()) {
-                            Long userType = document.getLong("user_type");
-                            if (userType != null) {
-                                if (userType == 1) {
-                                    startActivity(new Intent(LoginActivity.this, UserManageActivity.class));
-                                } else {
-                                    startActivity(new Intent(LoginActivity.this, LandingActivity.class));
-                                }
-                                finish();
-                            } else {
-                                Toast.makeText(LoginActivity.this, "User type is undefined.", Toast.LENGTH_SHORT).show();
-                            }
-                        } else {
-                            Toast.makeText(LoginActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        Toast.makeText(LoginActivity.this, "Failed to fetch user data: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                        Log.e(TAG, "Failed to fetch user data", task.getException());
+    db.collection("users").document(uid).get()
+        .addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                DocumentSnapshot document = task.getResult();
+                if (document != null && document.exists()) {
+                    Boolean enabled = document.getBoolean("enabled");
+                    if (enabled != null && !enabled) {
+                        Toast.makeText(LoginActivity.this, "Your user account is disabled. Please contact administrator.", Toast.LENGTH_LONG).show();
+                        auth.signOut();
+                        return;
                     }
-                });
+
+                    Long userType = document.getLong("user_type");
+                    if (userType != null) {
+                        if (userType == 1) {
+                            startActivity(new Intent(LoginActivity.this, UserManageActivity.class));
+                        } else {
+                            startActivity(new Intent(LoginActivity.this, LandingActivity.class));
+                        }
+                        finish();
+                    } else {
+                        Toast.makeText(LoginActivity.this, "User type is undefined.", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(LoginActivity.this, "User data not found.", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(LoginActivity.this, "Failed to fetch user data: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Failed to fetch user data", task.getException());
+            }
+        });
     }
+
 }

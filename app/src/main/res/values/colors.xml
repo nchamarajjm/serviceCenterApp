@@ -5,4 +5,11 @@
     <color name="primary_green">#70AD46</color>
     <color name="orange">#FF5F15</color>
     <color name="light_blue">#2196F3</color>
+    <color name="red">#FF0000</color>
+
+    <color name="switch_track_disabled">#FFB6B6</color>
+    <color name="switch_track_enabled">#81C784</color>
+    <color name="switch_thumb_disabled">#E57373</color>
+    <color name="switch_thumb_enabled">#388E3C</color>
+
 </resources>

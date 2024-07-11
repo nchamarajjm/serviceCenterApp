@@ -52,4 +52,5 @@ public class MainData {
     public void setOil(String oil) {
         this.oil = oil;
     }
+
 }

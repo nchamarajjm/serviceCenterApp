@@ -142,27 +142,27 @@ public class LandingActivity extends AppCompatActivity {
     }
 
     private void loadUserInfo(String uid) {
-        db.collection("users").document(uid).get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        DocumentSnapshot document = task.getResult();
-                        if (document != null && document.exists()) {
-                            String firstName = document.getString("firstName");
-                            String lastName = document.getString("lastName");
-                            customerId = document.getString("customer_id");
+    db.collection("users").document(uid).get()
+        .addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                DocumentSnapshot document = task.getResult();
+                if (document != null && document.exists()) {
+                    String firstName = document.getString("firstName");
+                    String lastName = document.getString("lastName");
+                    customerId = document.getString("customer_id");
 
-                            title_view.setText("Welcome, " + firstName + " " + lastName);
-                            progressDialog.dismiss();
-                        } else {
-                            Log.d(TAG, "No such document");
-                            progressDialog.dismiss();
-                        }
-                    } else {
-                        Log.d(TAG, "get failed with ", task.getException());
-                        Toast.makeText(LandingActivity.this, "Failed to load user details.", Toast.LENGTH_SHORT).show();
-                        progressDialog.dismiss();
-                    }
-                });
+                    title_view.setText("Welcome, " + firstName);
+                    progressDialog.dismiss();
+                } else {
+                    Log.d(TAG, "No such document");
+                    progressDialog.dismiss();
+                }
+            } else {
+                Log.d(TAG, "get failed with ", task.getException());
+                Toast.makeText(LandingActivity.this, "Failed to load user details.", Toast.LENGTH_SHORT).show();
+                progressDialog.dismiss();
+            }
+        });
     }
 
     private void fetchBalance(String customerId) {
@@ -171,7 +171,7 @@ public class LandingActivity extends AppCompatActivity {
                 ConnectionHelper connectionHelper = new ConnectionHelper();
                 connect = connectionHelper.connectionClass();
                 if (connect != null) {
-                    String query = "SELECT balance FROM tblclist WHERE ownerid = '" + customerId + "'";
+                    String query = "SELECT balance FROM tblcustomer WHERE ownerid = '" + customerId + "'";
                     Statement st = connect.createStatement();
                     ResultSet rs = st.executeQuery(query);
 

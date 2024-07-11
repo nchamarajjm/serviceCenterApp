@@ -1,6 +1,7 @@
 package com.example.servicecenterapp;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +10,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -53,16 +55,25 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         holder.emailTextView.setText(email);
         holder.enableSwitch.setChecked(isEnabled);
 
+        updateSwitchColor(holder.enableSwitch, isEnabled);
+
+        holder.enableSwitch.setOnCheckedChangeListener(null); // Clear previous listener to prevent callback loops
+
         holder.enableSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             db.collection("users").document(userId)
                     .update("enabled", isChecked)
-                    .addOnSuccessListener(aVoid -> Toast.makeText(context, "User " + (isChecked ? "enabled" : "disabled"), Toast.LENGTH_SHORT).show())
+                    .addOnSuccessListener(aVoid -> {
+                        Toast.makeText(context, "User " + (isChecked ? "enabled" : "disabled"), Toast.LENGTH_SHORT).show();
+                        userSnapshot.getReference().update("enabled", isChecked); // Update local snapshot for immediate UI update
+                        updateSwitchColor(holder.enableSwitch, isChecked);
+                    })
                     .addOnFailureListener(e -> {
                         Toast.makeText(context, "Failed to update user: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        holder.enableSwitch.setChecked(!isChecked);
+                        holder.enableSwitch.setChecked(!isChecked); // Revert switch state on failure
+                        updateSwitchColor(holder.enableSwitch, !isChecked);
                     });
 
-            // Enable or disable login for this user
+            // Optionally, manage user logout based on isEnabled state
             if (!isChecked) {
                 FirebaseUser user = auth.getCurrentUser();
                 if (user != null) {
@@ -89,6 +100,16 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
             firstNameTextView = itemView.findViewById(R.id.first_name);
             emailTextView = itemView.findViewById(R.id.email);
             enableSwitch = itemView.findViewById(R.id.enable_switch);
+        }
+    }
+
+    private void updateSwitchColor(Switch enableSwitch, boolean isEnabled) {
+        if (isEnabled) {
+            enableSwitch.getThumbDrawable().setColorFilter(ContextCompat.getColor(context, R.color.switch_thumb_enabled), android.graphics.PorterDuff.Mode.MULTIPLY);
+            enableSwitch.getTrackDrawable().setColorFilter(ContextCompat.getColor(context, R.color.switch_track_enabled), android.graphics.PorterDuff.Mode.MULTIPLY);
+        } else {
+            enableSwitch.getThumbDrawable().setColorFilter(ContextCompat.getColor(context, R.color.switch_thumb_disabled), android.graphics.PorterDuff.Mode.MULTIPLY);
+            enableSwitch.getTrackDrawable().setColorFilter(ContextCompat.getColor(context, R.color.switch_track_disabled), android.graphics.PorterDuff.Mode.MULTIPLY);
         }
     }
 }
