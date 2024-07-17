@@ -5,10 +5,13 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import android.app.Dialog;
+import android.widget.Button;
+import android.widget.EditText;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
@@ -50,7 +53,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         String email = userSnapshot.getString("email");
         boolean isEnabled = userSnapshot.getBoolean("enabled") != null ? userSnapshot.getBoolean("enabled") : true;
 
-        holder.customerIdTextView.setText(customerId);
+        if (customerId == null || customerId.isEmpty()) {
+            holder.customerIdTextView.setText("NULL");
+        } else {
+            holder.customerIdTextView.setText(customerId);
+        }
         holder.firstNameTextView.setText(firstName);
         holder.emailTextView.setText(email);
         holder.enableSwitch.setChecked(isEnabled);
@@ -81,7 +88,48 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                 }
             }
         });
+
+        // Set click listener for customerIdTextView
+        holder.customerIdTextView.setOnClickListener(v -> {
+            // Create and show the dialog
+            Dialog dialog = new Dialog(context);
+            dialog.setContentView(R.layout.dialog_edit_customer_id);
+
+            EditText editCustomerId = dialog.findViewById(R.id.edit_customer_id);
+            Button saveButton = dialog.findViewById(R.id.save_button);
+
+            editCustomerId.setText(customerId);
+
+            saveButton.setOnClickListener(view -> {
+                String newCustomerId = editCustomerId.getText().toString().trim();
+                if (!newCustomerId.isEmpty()) {
+                    db.collection("users").document(userId)
+                            .update("customer_id", newCustomerId)
+                            .addOnSuccessListener(aVoid -> {
+                                Toast.makeText(context, "Customer ID updated", Toast.LENGTH_SHORT).show();
+                                // Update local snapshot
+                                userSnapshot.getReference().update("customer_id", newCustomerId).addOnSuccessListener(documentReference -> {
+                                    holder.customerIdTextView.setText(newCustomerId.isEmpty() ? "NULL" : newCustomerId);
+                                    dialog.dismiss();
+                                });
+                            })
+                            .addOnFailureListener(e -> {
+                                Toast.makeText(context, "Failed to update Customer ID: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            });
+                } else {
+                    Toast.makeText(context, "Customer ID cannot be empty", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            // Set the dialog width to match the screen width
+            WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+            lp.copyFrom(dialog.getWindow().getAttributes());
+            lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+            dialog.show();
+            dialog.getWindow().setAttributes(lp);
+        });
     }
+
 
     @Override
     public int getItemCount() {

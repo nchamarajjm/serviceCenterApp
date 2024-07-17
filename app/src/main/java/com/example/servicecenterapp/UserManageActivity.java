@@ -50,6 +50,24 @@ public class UserManageActivity extends AppCompatActivity {
                 if (querySnapshot != null) {
                     userList.clear();
                     userList.addAll(querySnapshot.getDocuments());
+
+                    // Sort the list: move users with null or empty customer_id to the beginning
+                    userList.sort((user1, user2) -> {
+                        String customerId1 = user1.getString("customer_id");
+                        String customerId2 = user2.getString("customer_id");
+
+                        boolean isCustomerId1Empty = (customerId1 == null || customerId1.isEmpty());
+                        boolean isCustomerId2Empty = (customerId2 == null || customerId2.isEmpty());
+
+                        if (isCustomerId1Empty && !isCustomerId2Empty) {
+                            return -1;
+                        } else if (!isCustomerId1Empty && isCustomerId2Empty) {
+                            return 1;
+                        } else {
+                            return 0;
+                        }
+                    });
+
                     userAdapter.notifyDataSetChanged();
                 }
             } else {
@@ -58,4 +76,5 @@ public class UserManageActivity extends AppCompatActivity {
             }
         });
     }
+
 }
