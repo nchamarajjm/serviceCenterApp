@@ -12,10 +12,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
-
 import java.util.ArrayList;
 import java.util.List;
-
 public class UserManageActivity extends AppCompatActivity {
 
     private static final String TAG = "UserManageActivity";
@@ -23,7 +21,6 @@ public class UserManageActivity extends AppCompatActivity {
     private UserAdapter userAdapter;
     private List<DocumentSnapshot> userList;
     private FirebaseFirestore db;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

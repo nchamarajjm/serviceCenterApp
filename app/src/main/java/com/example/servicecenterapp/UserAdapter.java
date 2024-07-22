@@ -68,17 +68,17 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
 
         holder.enableSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             db.collection("users").document(userId)
-                    .update("enabled", isChecked)
-                    .addOnSuccessListener(aVoid -> {
-                        Toast.makeText(context, "User " + (isChecked ? "enabled" : "disabled"), Toast.LENGTH_SHORT).show();
-                        userSnapshot.getReference().update("enabled", isChecked); // Update local snapshot for immediate UI update
-                        updateSwitchColor(holder.enableSwitch, isChecked);
-                    })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(context, "Failed to update user: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        holder.enableSwitch.setChecked(!isChecked); // Revert switch state on failure
-                        updateSwitchColor(holder.enableSwitch, !isChecked);
-                    });
+                .update("enabled", isChecked)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(context, "User " + (isChecked ? "enabled" : "disabled"), Toast.LENGTH_SHORT).show();
+                    userSnapshot.getReference().update("enabled", isChecked); // Update local snapshot for immediate UI update
+                    updateSwitchColor(holder.enableSwitch, isChecked);
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(context, "Failed to update user: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    holder.enableSwitch.setChecked(!isChecked); // Revert switch state on failure
+                    updateSwitchColor(holder.enableSwitch, !isChecked);
+                });
 
             // Optionally, manage user logout based on isEnabled state
             if (!isChecked) {

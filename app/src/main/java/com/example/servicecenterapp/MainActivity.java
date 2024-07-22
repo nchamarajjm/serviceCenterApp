@@ -159,7 +159,7 @@ public class MainActivity extends AppCompatActivity implements MainAdapter.OnSer
                     MainData mainData = new MainData(vehicleNo, vehicleBrand, odoMeter,oil);
 
                     // Fetch service records for the current vehicle
-                    List<ServiceRecord> serviceRecords = fetchServiceRecords(vehicleNo);
+                    List<ServiceRecord> serviceRecords = fetchServiceRecords(vehicleNo,customerId);
                     mainData.setServiceRecords(serviceRecords);
 
                     mainDataList.add(mainData);
@@ -177,13 +177,13 @@ public class MainActivity extends AppCompatActivity implements MainAdapter.OnSer
         }
     }
 
-    private List<ServiceRecord> fetchServiceRecords(String vehicleNo) {
+    private List<ServiceRecord> fetchServiceRecords(String vehicleNo, String customerId) {
         List<ServiceRecord> serviceRecords = new ArrayList<>();
         try {
             ConnectionHelper connectionHelper = new ConnectionHelper();
             connect = connectionHelper.connectionClass();
             if (connect != null) {
-                String query = "SELECT top 5 inno, MAX(da) as da FROM tblitemlist WHERE vehino = '" + vehicleNo + "' GROUP BY inno ORDER BY inno Desc";
+                String query = "SELECT top 5 inno, MAX(da) as da FROM tblitemlist WHERE vehino = '" + vehicleNo + "' AND ownerid= '"+ customerId +"'  GROUP BY inno ORDER BY inno Desc";
                 Statement st = connect.createStatement();
                 ResultSet rs = st.executeQuery(query);
 
