@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.CheckBox;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -28,13 +29,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     private Context context;
     private List<DocumentSnapshot> userList;
     private FirebaseFirestore db;
-    private FirebaseAuth auth;
 
     public UserAdapter(Context context, List<DocumentSnapshot> userList) {
         this.context = context;
         this.userList = userList;
         db = FirebaseFirestore.getInstance();
-        auth = FirebaseAuth.getInstance();
     }
 
     @NonNull
@@ -53,65 +52,65 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         String email = userSnapshot.getString("email");
         boolean isEnabled = userSnapshot.getBoolean("enabled") != null ? userSnapshot.getBoolean("enabled") : true;
 
-        if (customerId == null || customerId.isEmpty()) {
-            holder.customerIdTextView.setText("NULL");
-        } else {
-            holder.customerIdTextView.setText(customerId);
-        }
+        // Set the text fields
+        holder.customerIdTextView.setText(customerId == null || customerId.isEmpty() ? "NULL" : customerId);
         holder.firstNameTextView.setText(firstName);
         holder.emailTextView.setText(email);
-        holder.enableSwitch.setChecked(isEnabled);
 
-        updateSwitchColor(holder.enableSwitch, isEnabled);
-
-        holder.enableSwitch.setOnCheckedChangeListener(null); // Clear previous listener to prevent callback loops
-
-        holder.enableSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            db.collection("users").document(userId)
-                .update("enabled", isChecked)
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(context, "User " + (isChecked ? "enabled" : "disabled"), Toast.LENGTH_SHORT).show();
-                    userSnapshot.getReference().update("enabled", isChecked); // Update local snapshot for immediate UI update
-                    updateSwitchColor(holder.enableSwitch, isChecked);
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(context, "Failed to update user: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    holder.enableSwitch.setChecked(!isChecked); // Revert switch state on failure
-                    updateSwitchColor(holder.enableSwitch, !isChecked);
-                });
-
-            // Optionally, manage user logout based on isEnabled state
-            if (!isChecked) {
-                FirebaseUser user = auth.getCurrentUser();
-                if (user != null) {
-                    auth.signOut();
-                }
-            }
-        });
-
-        // Set click listener for customerIdTextView
-        holder.customerIdTextView.setOnClickListener(v -> {
-            // Create and show the dialog
+        // Set click listener for the entire row (LinearLayout)
+        holder.itemView.setOnClickListener(v -> {
+            // Create and show the dialog for editing customer ID and enabled status
             Dialog dialog = new Dialog(context);
             dialog.setContentView(R.layout.dialog_edit_customer_id);
 
             EditText editCustomerId = dialog.findViewById(R.id.edit_customer_id);
+            CheckBox accEnableCheckBox = dialog.findViewById(R.id.acc_enable_checkbox); // Get the CheckBox
             Button saveButton = dialog.findViewById(R.id.save_button);
 
+            // Pre-fill the current customer ID and enabled status in the dialog
             editCustomerId.setText(customerId);
+            accEnableCheckBox.setChecked(isEnabled); // Set CheckBox status to current 'enabled' value
 
             saveButton.setOnClickListener(view -> {
                 String newCustomerId = editCustomerId.getText().toString().trim();
+                boolean newEnabledStatus = accEnableCheckBox.isChecked(); // Get the new enabled status
+
+                // Update the enabled status in Firestore
+                db.collection("users").document(userId)
+                        .update("enabled", newEnabledStatus)
+                        .addOnSuccessListener(aVoid -> {
+                            Toast.makeText(context, "Account status updated", Toast.LENGTH_SHORT).show();
+
+                            // Update local snapshot with the new enabled status
+                            userSnapshot.getReference().update("enabled", newEnabledStatus)
+                                    .addOnSuccessListener(success -> {
+                                        // Refresh the UI for this item
+                                        userSnapshot.getReference().get().addOnSuccessListener(updatedSnapshot -> {
+                                            userList.set(position, updatedSnapshot); // Update the list with the latest data
+                                            notifyItemChanged(position); // Refresh this specific item
+                                            dialog.dismiss(); // Close dialog
+                                        });
+                                    });
+                        })
+                        .addOnFailureListener(e -> {
+                            Toast.makeText(context, "Failed to update status: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        });
+
                 if (!newCustomerId.isEmpty()) {
+                    // Update the customer ID only if it's not empty
                     db.collection("users").document(userId)
                             .update("customer_id", newCustomerId)
                             .addOnSuccessListener(aVoid -> {
                                 Toast.makeText(context, "Customer ID updated", Toast.LENGTH_SHORT).show();
-                                // Update local snapshot
-                                userSnapshot.getReference().update("customer_id", newCustomerId).addOnSuccessListener(documentReference -> {
-                                    holder.customerIdTextView.setText(newCustomerId.isEmpty() ? "NULL" : newCustomerId);
-                                    dialog.dismiss();
-                                });
+
+                                // Update local snapshot and UI
+                                userSnapshot.getReference().update("customer_id", newCustomerId)
+                                        .addOnSuccessListener(success -> {
+                                            userSnapshot.getReference().get().addOnSuccessListener(updatedSnapshot -> {
+                                                userList.set(position, updatedSnapshot); // Update the list with the latest data
+                                                notifyItemChanged(position); // Refresh this specific item
+                                            });
+                                        });
                             })
                             .addOnFailureListener(e -> {
                                 Toast.makeText(context, "Failed to update Customer ID: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -131,6 +130,9 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     }
 
 
+
+
+
     @Override
     public int getItemCount() {
         return userList.size();
@@ -140,24 +142,13 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         TextView customerIdTextView;
         TextView firstNameTextView;
         TextView emailTextView;
-        Switch enableSwitch;
 
         public UserViewHolder(@NonNull View itemView) {
             super(itemView);
             customerIdTextView = itemView.findViewById(R.id.customer_id);
             firstNameTextView = itemView.findViewById(R.id.first_name);
             emailTextView = itemView.findViewById(R.id.email);
-            enableSwitch = itemView.findViewById(R.id.enable_switch);
-        }
-    }
-
-    private void updateSwitchColor(Switch enableSwitch, boolean isEnabled) {
-        if (isEnabled) {
-            enableSwitch.getThumbDrawable().setColorFilter(ContextCompat.getColor(context, R.color.switch_thumb_enabled), android.graphics.PorterDuff.Mode.MULTIPLY);
-            enableSwitch.getTrackDrawable().setColorFilter(ContextCompat.getColor(context, R.color.switch_track_enabled), android.graphics.PorterDuff.Mode.MULTIPLY);
-        } else {
-            enableSwitch.getThumbDrawable().setColorFilter(ContextCompat.getColor(context, R.color.switch_thumb_disabled), android.graphics.PorterDuff.Mode.MULTIPLY);
-            enableSwitch.getTrackDrawable().setColorFilter(ContextCompat.getColor(context, R.color.switch_track_disabled), android.graphics.PorterDuff.Mode.MULTIPLY);
         }
     }
 }
+

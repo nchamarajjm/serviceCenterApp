@@ -7,7 +7,9 @@
     android:layout_margin="8dp"
     android:background="@android:color/white"
     android:elevation="4dp"
-    android:layout_gravity="center_vertical">
+    android:layout_gravity="center_vertical"
+    android:clickable="true"
+    android:focusable="true">
 
     <TextView
         android:id="@+id/customer_id"
@@ -32,9 +34,4 @@
         android:layout_weight="1"
         android:textSize="16sp"
         android:textColor="@android:color/black" />
-
-    <Switch
-        android:id="@+id/enable_switch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
 </LinearLayout>

@@ -73,5 +73,32 @@ public class UserManageActivity extends AppCompatActivity {
             }
         });
     }
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        // Save the state of the userList to the Bundle
+        ArrayList<Boolean> switchStates = new ArrayList<>();
+        for (DocumentSnapshot user : userList) {
+            Boolean isEnabled = user.getBoolean("enabled");
+            switchStates.add(isEnabled != null ? isEnabled : true);
+        }
+        outState.putSerializable("switchStates", switchStates);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+
+        // Restore the switch states from the savedInstanceState Bundle
+        ArrayList<Boolean> switchStates = (ArrayList<Boolean>) savedInstanceState.getSerializable("switchStates");
+        if (switchStates != null && userList.size() == switchStates.size()) {
+            for (int i = 0; i < userList.size(); i++) {
+                Boolean isEnabled = switchStates.get(i);
+                userList.get(i).getReference().update("enabled", isEnabled); // Restore the local snapshot
+            }
+            userAdapter.notifyDataSetChanged();
+        }
+    }
 
 }

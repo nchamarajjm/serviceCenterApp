@@ -12,6 +12,12 @@
         android:hint="Enter Customer ID"
         android:inputType="text" />
 
+    <CheckBox
+        android:id="@+id/acc_enable_checkbox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Enabled" />
+
     <Button
         android:id="@+id/save_button"
         android:layout_width="wrap_content"
